@@ -248,7 +248,7 @@ class MapReachSelectionService {
       final properties = Map<String, dynamic>.from(rawProperties as Map);
 
       if (!properties.containsKey('station_id') ||
-          !properties.containsKey('streamOrde')) {
+          !properties.containsKey('streamOrder')) {
         return null;
       }
 
@@ -269,12 +269,12 @@ class MapReachSelectionService {
       final middleCoord = coordinates[middleIndex] as List;
 
       print(
-        '✅ Created stream: ${properties['station_id']} (Order ${properties['streamOrde']})',
+        '✅ Created stream: ${properties['station_id']} (Order ${properties['streamOrder']})',
       );
 
       return VisibleStream(
         stationId: properties['station_id'].toString(),
-        streamOrder: properties['streamOrde'] as int,
+        streamOrder: properties['streamOrder'] as int,
         longitude: middleCoord[0].toDouble(),
         latitude: middleCoord[1].toDouble(),
       );
@@ -468,11 +468,11 @@ class MapReachSelectionService {
 
       print('🔍 Feature properties: ${properties.keys.toList()}');
       print('🔍 station_id: ${properties['station_id']}');
-      print('🔍 streamOrde: ${properties['streamOrde']}');
+      print('🔍 streamOrder: ${properties['streamOrder']}');
 
       if (!properties.containsKey('station_id') ||
-          !properties.containsKey('streamOrde')) {
-        print('❌ Missing required properties (station_id or streamOrde)');
+          !properties.containsKey('streamOrder')) {
+        print('❌ Missing required properties (station_id or streamOrder)');
         return null;
       }
 

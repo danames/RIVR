@@ -5,7 +5,7 @@
 class SelectedReach {
   // Immediate data from vector tiles
   final String reachId; // from station_id property
-  final int streamOrder; // from streamOrde property
+  final int streamOrder; // from streamOrder property
   final double latitude; // from tap location
   final double longitude; // from tap location
 
@@ -36,7 +36,7 @@ class SelectedReach {
   }) {
     return SelectedReach(
       reachId: properties['station_id'].toString(),
-      streamOrder: properties['streamOrde'] as int,
+      streamOrder: properties['streamOrder'] as int,
       latitude: latitude,
       longitude: longitude,
       selectedAt: DateTime.now(),

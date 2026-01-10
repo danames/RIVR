@@ -130,7 +130,7 @@ class MapVectorTilesService {
           lineOpacity: 0.8,
           filter: [
             "<=",
-            ["get", "streamOrde"], // Note: it's "streamOrde" not "streamOrder"
+            ["get", "streamOrder"], // Note: it's "streamOrde" not "streamOrder"
             2,
           ],
         ),
@@ -149,12 +149,12 @@ class MapVectorTilesService {
             "all",
             [
               ">=",
-              ["get", "streamOrde"],
+              ["get", "streamOrder"],
               3,
             ],
             [
               "<=",
-              ["get", "streamOrde"],
+              ["get", "streamOrder"],
               4,
             ],
           ],
@@ -166,13 +166,13 @@ class MapVectorTilesService {
         LineLayer(
           id: 'streams2-order-5-plus',
           sourceId: AppConfig.vectorSourceId,
-          sourceLayer: AppConfig.vectorSourceLayer, // 'streams2-7jgd8p'
+          sourceLayer: AppConfig.vectorSourceLayer,
           lineColor: 0xFF191970, // Midnight blue
           lineWidth: 3.5,
           lineOpacity: 0.9,
           filter: [
             ">=",
-            ["get", "streamOrde"],
+            ["get", "streamOrder"],
             5,
           ],
         ),
