@@ -96,6 +96,7 @@ class NoaaApiService {
   /// Fetch return period data from NWM API
   /// Returns array data in format expected by ReachData.fromReturnPeriodApi()
   Future<List<dynamic>> fetchReturnPeriods(String reachId) async {
+    final start = DateTime.now();
     try {
       print('NOAA_API: Fetching return periods for: $reachId');
 
@@ -111,6 +112,9 @@ class NoaaApiService {
             },
           )
           .timeout(_normalTimeout); // Use normal timeout for supplementary data
+
+      final duration = DateTime.now().difference(start); // ADD THIS
+      print('API_TIME_RETURN_PERIOD: ${duration.inMilliseconds}ms');
 
       print('NOAA_API: Return period response status: ${response.statusCode}');
 
@@ -179,6 +183,7 @@ class NoaaApiService {
     String series, {
     bool isOverview = false, // Priority flag for overview loading
   }) async {
+    final start = DateTime.now();
     try {
       print(
         'NOAA_API: Fetching $series forecast for: $reachId ${isOverview ? "(overview)" : ""}',
@@ -201,6 +206,9 @@ class NoaaApiService {
             },
           )
           .timeout(timeout);
+
+      final duration = DateTime.now().difference(start);
+      print('API_TIME_NWM_$series: ${duration.inMilliseconds}ms');
 
       print('NOAA_API: Forecast response status: ${response.statusCode}');
 

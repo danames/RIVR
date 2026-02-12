@@ -60,9 +60,9 @@ class FlowUnitPreferenceService {
       return value;
     }
 
-    print(
-      'FLOW_UNIT_SERVICE: Converting $value from $normalizedFromUnit to $normalizedToUnit',
-    );
+    // print(
+    //   'FLOW_UNIT_SERVICE: Converting $value from $normalizedFromUnit to $normalizedToUnit',
+    // );
 
     // Convert CMS to CFS
     if (normalizedFromUnit == 'CMS' && normalizedToUnit == 'CFS') {

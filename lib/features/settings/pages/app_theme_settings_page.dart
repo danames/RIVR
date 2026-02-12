@@ -31,7 +31,7 @@ class _AppThemeSettingsPageState extends State<AppThemeSettingsPage> {
             CupertinoListSection.insetGrouped(
               header: const Text('APPEARANCE'),
               footer: const Text(
-                'Choose how RivrFlow looks. System will automatically switch between light and dark based on your device settings.',
+                'Choose how RIVR looks. System will automatically switch between light and dark based on your device settings.',
                 style: TextStyle(fontSize: 13),
               ),
               children: [
@@ -57,35 +57,6 @@ class _AppThemeSettingsPageState extends State<AppThemeSettingsPage> {
             ),
 
             const SizedBox(height: 32),
-
-            // Preview section
-            CupertinoListSection.insetGrouped(
-              header: const Text('PREVIEW'),
-              children: [
-                CupertinoListTile(
-                  leading: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: CupertinoColors.systemBlue,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.drop_fill,
-                      color: CupertinoColors.white,
-                      size: 18,
-                    ),
-                  ),
-                  title: const Text('Sample River'),
-                  subtitle: const Text('1,245 CFS • Optimal'),
-                  trailing: const Icon(
-                    CupertinoIcons.chevron_right,
-                    color: CupertinoColors.systemGrey3,
-                    size: 16,
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),

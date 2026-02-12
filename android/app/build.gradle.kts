@@ -21,7 +21,7 @@ plugins {
 
 android {
     namespace = "com.byuhydroinformatics.rivr"
-    compileSdk = 35 // Updated for latest Firebase and notification support
+    compileSdk = 36 // Updated for latest Firebase and notification support
     ndkVersion = "27.0.12077973"
 
     compileOptions {

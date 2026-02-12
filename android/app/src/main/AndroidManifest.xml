@@ -59,7 +59,7 @@
     <application
         android:label="RIVR"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/rivr"
         android:enableOnBackInvokedCallback="true">
 
         <!-- ========== Main Activity ========== -->

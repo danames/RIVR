@@ -38,7 +38,7 @@ class FloodCategoriesInfoSheet extends StatelessWidget {
         ),
       ),
       child: SafeArea(
-        top: false,
+        top: true,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -289,7 +289,6 @@ class FloodCategoriesInfoSheet extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           color: CupertinoColors.secondaryLabel.resolveFrom(context),
-          fontStyle: FontStyle.italic,
         ),
       ),
     );

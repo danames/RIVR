@@ -133,7 +133,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 8),
 
                   Text(
-                    'River Flow Monitoring',
+                    'River Information Visualization and Risk',
                     style: TextStyle(
                       fontSize: 16,
                       color: brightness == Brightness.dark

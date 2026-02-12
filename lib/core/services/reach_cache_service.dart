@@ -13,6 +13,9 @@ class ReachCacheService {
 
   SharedPreferences? _prefs;
 
+  int _cacheHits = 0;
+  int _cacheMisses = 0;
+
   // Cache configuration
   static const Duration _cacheMaxAge = Duration(days: 180); // 6 months
   static const String _keyPrefix = 'reach_cache_';
@@ -37,7 +40,10 @@ class ReachCacheService {
       final cachedJson = _prefs!.getString(key);
 
       if (cachedJson == null) {
-        print('REACH_CACHE: No cache found for reach: $reachId');
+        _cacheMisses++;
+        print(
+          'REACH_CACHE: No cache found for reach: $reachId (Miss: $_cacheMisses)',
+        );
         return null;
       }
 
@@ -46,15 +52,17 @@ class ReachCacheService {
 
       // Check if cache is stale (6 months)
       if (reachData.isCacheStale(maxAge: _cacheMaxAge)) {
+        _cacheMisses++;
         print(
-          'REACH_CACHE: Cache stale for reach: $reachId (${reachData.cachedAt})',
+          'REACH_CACHE: Cache stale for reach: $reachId (${reachData.cachedAt}) (Miss: $_cacheMisses)',
         );
         // Remove stale cache
         await _prefs!.remove(key);
         return null;
       }
 
-      print('REACH_CACHE: Cache hit for reach: $reachId');
+      _cacheHits++;
+      print('REACH_CACHE: Cache hit for reach: $reachId (Hits: $_cacheHits)');
       return reachData;
     } catch (e) {
       print('REACH_CACHE: Error getting cached reach $reachId: $e');
@@ -171,6 +179,23 @@ class ReachCacheService {
       print('REACH_CACHE: Error getting cache stats: $e');
       return {'error': e.toString()};
     }
+  }
+
+  /// Get cache effectiveness stats
+  Map<String, dynamic> getCacheEffectiveness() {
+    final total = _cacheHits + _cacheMisses;
+    final hitRate = total > 0 ? (_cacheHits / total) * 100 : 0.0;
+
+    print(
+      'CACHE_STATS: Hits=$_cacheHits, Misses=$_cacheMisses, Rate=${hitRate.toStringAsFixed(1)}%',
+    );
+
+    return {
+      'hits': _cacheHits,
+      'misses': _cacheMisses,
+      'total': total,
+      'hitRate': hitRate,
+    };
   }
 
   /// Force refresh a reach (clear cache and require fresh API call)

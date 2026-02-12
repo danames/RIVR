@@ -617,7 +617,7 @@ class _HydrographPageState extends State<HydrographPage> {
                   // Add spacing only when checkmark is shown
                   if (_showReturnPeriods) const SizedBox(width: 6),
                   Text(
-                    'Return Periods',
+                    'Risk Zones',
                     style: TextStyle(
                       fontSize: 13,
                       color: _showReturnPeriods
@@ -715,7 +715,7 @@ class _HydrographPageState extends State<HydrographPage> {
               _buildLegendItem('Flow Data', CupertinoColors.systemBlue),
               const SizedBox(width: 16),
               if (_showReturnPeriods)
-                _buildLegendItem('Return Periods', CupertinoColors.systemRed),
+                _buildLegendItem('Risk Zones', CupertinoColors.systemRed),
               // NEW: Show ensemble legend when enabled
               if (_showEnsembleMembers) ...[
                 const SizedBox(width: 16),
