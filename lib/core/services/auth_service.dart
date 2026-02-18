@@ -7,7 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_settings.dart';
 import 'error_service.dart';
 
-/// Simplified Firebase Auth wrapper service for RivrFlow
+/// Simplified Firebase Auth wrapper service for RIVR
 /// Handles all authentication operations with proper error handling
 class AuthService {
   static final AuthService _instance = AuthService._internal();

@@ -1,7 +1,7 @@
 // lib/features/forecast/widgets/daily_expandable_widget/flow_range_bar.dart
 
 import 'package:flutter/cupertino.dart';
-import 'package:rivrflow/core/models/reach_data.dart';
+import 'package:rivr/core/models/reach_data.dart';
 import '../../../../../core/services/flow_unit_preference_service.dart';
 import '../../domain/entities/daily_flow_forecast.dart';
 

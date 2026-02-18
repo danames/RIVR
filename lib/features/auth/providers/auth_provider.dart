@@ -1,12 +1,12 @@
 // lib/features/auth/providers/auth_provider.dart
 
 import 'package:flutter/foundation.dart';
-import 'package:rivrflow/features/auth/models/auth_user.dart';
+import 'package:rivr/features/auth/models/auth_user.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/models/user_settings.dart';
 import '../../auth/services/user_settings_service.dart';
 
-/// Simple authentication state management for RivrFlow
+/// Simple authentication state management for RIVR
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   final UserSettingsService _userSettingsService = UserSettingsService();

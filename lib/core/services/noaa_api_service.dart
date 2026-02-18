@@ -52,7 +52,7 @@ class NoaaApiService {
             Uri.parse(url),
             headers: {
               'Content-Type': 'application/json',
-              'User-Agent': 'RivrFlow/1.0',
+              'User-Agent': 'RIVR/1.0',
               // Priority header for overview requests
               if (isOverview) 'X-Request-Priority': 'high',
             },
@@ -108,7 +108,7 @@ class NoaaApiService {
             Uri.parse(url),
             headers: {
               'Content-Type': 'application/json',
-              'User-Agent': 'RivrFlow/1.0',
+              'User-Agent': 'RIVR/1.0',
             },
           )
           .timeout(_normalTimeout); // Use normal timeout for supplementary data
@@ -200,7 +200,7 @@ class NoaaApiService {
             Uri.parse(url),
             headers: {
               'Content-Type': 'application/json',
-              'User-Agent': 'RivrFlow/1.0',
+              'User-Agent': 'RIVR/1.0',
               // Priority header for overview requests
               if (isOverview) 'X-Request-Priority': 'high',
             },
@@ -292,7 +292,7 @@ class NoaaApiService {
               Uri.parse(AppConfig.getForecastUrl(reachId, forecastType)),
               headers: {
                 'Content-Type': 'application/json',
-                'User-Agent': 'RivrFlow/1.0',
+                'User-Agent': 'RIVR/1.0',
               },
             )
             .timeout(_longTimeout); // Longer timeout for complete loading

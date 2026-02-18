@@ -3,7 +3,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:rivrflow/features/forecast/utils/flow_category_pulse_animator.dart';
+import 'package:rivr/features/forecast/utils/flow_category_pulse_animator.dart';
 import '../../../core/providers/reach_data_provider.dart';
 import '../../../core/services/flow_unit_preference_service.dart';
 import '../../../core/constants.dart'; // Import for centralized styling

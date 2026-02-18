@@ -2,8 +2,8 @@
 
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:rivrflow/core/services/error_service.dart';
-import 'package:rivrflow/features/auth/services/user_settings_service.dart';
+import 'package:rivr/core/services/error_service.dart';
+import 'package:rivr/features/auth/services/user_settings_service.dart';
 
 /// Simple FCM service for managing push notification tokens
 /// Integrates with existing UserSettingsService

@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-/// Comprehensive error handling service for RivrFlow
+/// Comprehensive error handling service for RIVR
 /// Maps Firebase errors to user-friendly messages and provides logging utilities
 class ErrorService {
   static const String _logPrefix = 'ERROR_SERVICE';

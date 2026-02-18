@@ -33,7 +33,7 @@ class CacheService {
   static const String _biometricTypeKey = 'biometric_type';
 
   // Recent searches keys
-  static const String _recentSearchesKey = 'rivrflow_recent_searches';
+  static const String _recentSearchesKey = 'rivr_recent_searches';
   static const int _maxRecentSearches = 5;
 
   /// Initialize the cache service

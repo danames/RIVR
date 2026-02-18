@@ -2,7 +2,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import 'package:rivrflow/features/auth/providers/auth_provider.dart';
+import 'package:rivr/features/auth/providers/auth_provider.dart';
 import '../../features/auth/presentation/pages/auth_coordinator.dart';
 
 /// Simple authentication guard for protecting routes

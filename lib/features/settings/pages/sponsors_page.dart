@@ -52,7 +52,7 @@ class SponsorsPage extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        'RivrFlow is made possible through the generous support and collaboration of these outstanding organizations.',
+                        'RIVR is made possible through the generous support and collaboration of these outstanding organizations.',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey[700],

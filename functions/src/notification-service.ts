@@ -324,7 +324,7 @@ async function sendAlert(
     // Check if this is a repeat alert (sent within last 6 hours)
     const isRepeat = await checkRecentAlert(user.userId, reachId);
     const stillPrefix = isRepeat ? "Still exceeds" : "Exceeds";
-    
+
     const unitLabel = user.preferredFlowUnit.toUpperCase();
 
     const message = {

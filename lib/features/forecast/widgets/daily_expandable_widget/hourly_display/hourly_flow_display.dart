@@ -1,10 +1,10 @@
 // lib/features/forecast/widgets/daily_expandable_widget/hourly_display/hourly_flow_display.dart
 
 import 'package:flutter/cupertino.dart';
-import 'package:rivrflow/core/models/reach_data.dart';
-import 'package:rivrflow/features/forecast/widgets/daily_expandable_widget/hourly_display/flow_value_indicator.dart';
-import 'package:rivrflow/features/forecast/widgets/daily_expandable_widget/hourly_display/micro_bar_chart.dart';
-import 'package:rivrflow/features/forecast/widgets/daily_expandable_widget/hourly_display/time_slider.dart';
+import 'package:rivr/core/models/reach_data.dart';
+import 'package:rivr/features/forecast/widgets/daily_expandable_widget/hourly_display/flow_value_indicator.dart';
+import 'package:rivr/features/forecast/widgets/daily_expandable_widget/hourly_display/micro_bar_chart.dart';
+import 'package:rivr/features/forecast/widgets/daily_expandable_widget/hourly_display/time_slider.dart';
 import '../../../../../core/services/flow_unit_preference_service.dart';
 import '../../../domain/entities/daily_flow_forecast.dart';
 

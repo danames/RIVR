@@ -1,7 +1,7 @@
 // lib/features/forecast/widgets/daily_expandable_widget/hourly_display/micro_bar_chart.dart
 
 import 'package:flutter/cupertino.dart';
-import 'package:rivrflow/core/models/reach_data.dart';
+import 'package:rivr/core/models/reach_data.dart';
 import '../../../../../core/services/flow_unit_preference_service.dart';
 
 /// A compact bar chart that displays hourly flow data with selection highlighting

@@ -2,12 +2,12 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import 'package:rivrflow/features/auth/providers/auth_provider.dart';
+import 'package:rivr/features/auth/providers/auth_provider.dart';
 import '../../../auth/services/user_settings_service.dart';
 import '../../../../core/services/cache_service.dart';
 import 'auth_wrapper.dart';
 
-/// Main authentication flow coordinator for RivrFlow
+/// Main authentication flow coordinator for RIVR
 class AuthCoordinator extends StatefulWidget {
   final Widget Function(BuildContext context)? onAuthSuccess;
   final VoidCallback? onAuthFailure;
@@ -144,7 +144,7 @@ class _AuthCoordinatorState extends State<AuthCoordinator> {
               CupertinoActivityIndicator(radius: 20),
               SizedBox(height: 20),
               Text(
-                'Initializing RivrFlow...',
+                'Initializing RIVR...',
                 style: TextStyle(
                   fontSize: 16,
                   color: CupertinoColors.systemGrey,
@@ -236,7 +236,7 @@ class _AuthCoordinatorState extends State<AuthCoordinator> {
   Widget _buildDefaultAuthenticatedView(AuthProvider authProvider) {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('RivrFlow'),
+        middle: const Text('RIVR'),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () async {
@@ -290,7 +290,7 @@ class _AuthCoordinatorState extends State<AuthCoordinator> {
               const SizedBox(height: 30),
 
               Text(
-                'Welcome to RivrFlow!',
+                'Welcome to RIVR!',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,

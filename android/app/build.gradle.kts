@@ -1,5 +1,5 @@
 // android/app/build.gradle.kts
-// RivrFlow - Upgraded with Firebase, notifications, and production configurations
+// RIVR - Upgraded with Firebase, notifications, and production configurations
 
 import java.util.Properties
 import java.io.FileInputStream

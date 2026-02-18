@@ -148,7 +148,7 @@ class ReturnPeriodsInfoSheet extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         const Text(
-          'RivrFlow compares current river flow to these thresholds to show you the flood risk level:',
+          'RIVR compares current river flow to these thresholds to show you the flood risk level:',
           style: TextStyle(fontSize: 14, color: CupertinoColors.label),
         ),
         const SizedBox(height: 12),

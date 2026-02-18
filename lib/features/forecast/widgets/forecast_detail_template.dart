@@ -2,8 +2,8 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import 'package:rivrflow/core/services/flow_unit_preference_service.dart';
-import 'package:rivrflow/features/forecast/widgets/horizontal_flow_timeline.dart';
+import 'package:rivr/core/services/flow_unit_preference_service.dart';
+import 'package:rivr/features/forecast/widgets/horizontal_flow_timeline.dart';
 import '../../../core/providers/reach_data_provider.dart';
 import '../../../core/services/forecast_service.dart';
 import 'current_flow_status_card.dart';

@@ -1,7 +1,7 @@
 // lib/core/providers/reach_data_provider.dart
 
 import 'package:flutter/foundation.dart';
-import 'package:rivrflow/features/forecast/widgets/horizontal_flow_timeline.dart';
+import 'package:rivr/features/forecast/widgets/horizontal_flow_timeline.dart';
 import '../models/reach_data.dart';
 import '../services/forecast_service.dart';
 

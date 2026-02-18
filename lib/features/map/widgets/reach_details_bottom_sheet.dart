@@ -867,7 +867,7 @@ class _ReachDetailsBottomSheetState extends State<ReachDetailsBottomSheet> {
       }
     }
 
-    buffer.writeln('\n📱 Shared from RivrFlow');
+    buffer.writeln('\n📱 Shared from RIVR');
     return buffer.toString();
   }
 
@@ -899,7 +899,7 @@ class _ReachDetailsBottomSheetState extends State<ReachDetailsBottomSheet> {
       buffer.writeln('https://maps.google.com/?q=$lat,$lng');
     }
 
-    buffer.writeln('\n📱 Shared from RivrFlow');
+    buffer.writeln('\n📱 Shared from RIVR');
     return buffer.toString();
   }
 }

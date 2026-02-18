@@ -2,7 +2,7 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 
-/// Simple wrapper around Firebase User for RivrFlow
+/// Simple wrapper around Firebase User for RIVR
 class AuthUser {
   final String uid;
   final String email;

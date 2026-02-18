@@ -1,6 +1,6 @@
 // lib/core/models/favorite_river.dart
 
-import 'package:rivrflow/core/services/flow_unit_preference_service.dart';
+import 'package:rivr/core/services/flow_unit_preference_service.dart';
 
 /// Simple model for storing user's favorite rivers
 /// Designed for JSON serialization with SharedPreferences

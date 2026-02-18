@@ -3,9 +3,9 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:rivrflow/core/models/reach_data.dart';
-import 'package:rivrflow/core/services/noaa_api_service.dart';
-import 'package:rivrflow/core/services/reach_cache_service.dart';
+import 'package:rivr/core/models/reach_data.dart';
+import 'package:rivr/core/services/noaa_api_service.dart';
+import 'package:rivr/core/services/reach_cache_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/favorite_river.dart';
 import '../services/favorites_service.dart';

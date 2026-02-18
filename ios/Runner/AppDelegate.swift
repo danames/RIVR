@@ -19,7 +19,7 @@ import UserNotifications
     print("🔥 Firebase configured")
     
     let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-    let tokenChannel = FlutterMethodChannel(name: "com.byuhydroinformaticslab.rivr.mapbox/token", binaryMessenger: controller.binaryMessenger)
+    let tokenChannel = FlutterMethodChannel(name: "com.hydromap.rivr.mapbox/token", binaryMessenger: controller.binaryMessenger)
     
     tokenChannel.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in

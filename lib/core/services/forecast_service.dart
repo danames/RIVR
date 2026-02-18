@@ -1,7 +1,7 @@
 // lib/core/services/forecast_service.dart
 
-import 'package:rivrflow/features/forecast/widgets/horizontal_flow_timeline.dart';
-import 'package:rivrflow/features/map/widgets/map_search_widget.dart';
+import 'package:rivr/features/forecast/widgets/horizontal_flow_timeline.dart';
+import 'package:rivr/features/map/widgets/map_search_widget.dart';
 import '../models/reach_data.dart';
 import 'noaa_api_service.dart';
 import 'reach_cache_service.dart';

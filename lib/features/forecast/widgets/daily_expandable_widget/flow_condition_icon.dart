@@ -4,7 +4,7 @@ import 'package:flutter/cupertino.dart';
 
 /// Simple icon widget that displays an appropriate icon based on flow category
 ///
-/// Uses rivrflow's standard Cupertino design system with consistent colors and icons
+/// Uses RIVR's standard Cupertino design system with consistent colors and icons
 /// for flow condition visualization across the app.
 class FlowConditionIcon extends StatelessWidget {
   /// The flow category to display an icon for
@@ -67,7 +67,7 @@ class FlowConditionIcon extends StatelessWidget {
   }
 
   /// Get the appropriate Cupertino color for a flow category
-  /// Uses rivrflow's standard color scheme
+  /// Uses RIVR's standard color scheme
   Color _getColorForCategory(String category) {
     switch (category.toLowerCase()) {
       case 'normal':

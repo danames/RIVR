@@ -1,12 +1,12 @@
 // functions/src/index.ts
+// Using Firebase Functions 1st gen (v1) for compatibility
 
-import {onSchedule} from "firebase-functions/v2/scheduler";
-import {onRequest} from "firebase-functions/v2/https";
+import * as functions from "firebase-functions/v1";
 import * as logger from "firebase-functions/logger";
 
 /**
  * Scheduled functions for checking river flood alerts at specific times
- * 
+ *
  * Time slots based on user notification frequency preferences:
  * - Slot 1 (6am MT): All users (1x, 2x, 3x, 4x daily)
  * - Slot 2 (12pm MT): 3x and 4x daily users
@@ -15,47 +15,45 @@ import * as logger from "firebase-functions/logger";
  */
 
 // Slot 1: 6:00 AM Mountain Time
-export const checkRiverAlerts6am = onSchedule({
-  schedule: "0 6 * * *",
-  timeZone: "America/Denver",
-  memory: "1GiB",
-  timeoutSeconds: 540,
-}, async (event) => {
-  await runAlertCheckForSlot(1, event.scheduleTime);
-});
+export const checkRiverAlerts6am = functions
+  .runWith({memory: "1GB", timeoutSeconds: 540})
+  .pubsub.schedule("0 6 * * *")
+  .timeZone("America/Denver")
+  .onRun(async (context) => {
+    await runAlertCheckForSlot(1, context.timestamp);
+  });
 
 // Slot 2: 12:00 PM Mountain Time
-export const checkRiverAlerts12pm = onSchedule({
-  schedule: "0 12 * * *",
-  timeZone: "America/Denver",
-  memory: "1GiB",
-  timeoutSeconds: 540,
-}, async (event) => {
-  await runAlertCheckForSlot(2, event.scheduleTime);
-});
+export const checkRiverAlerts12pm = functions
+  .runWith({memory: "1GB", timeoutSeconds: 540})
+  .pubsub.schedule("0 12 * * *")
+  .timeZone("America/Denver")
+  .onRun(async (context) => {
+    await runAlertCheckForSlot(2, context.timestamp);
+  });
 
 // Slot 3: 6:00 PM Mountain Time
-export const checkRiverAlerts6pm = onSchedule({
-  schedule: "0 18 * * *",
-  timeZone: "America/Denver",
-  memory: "1GiB",
-  timeoutSeconds: 540,
-}, async (event) => {
-  await runAlertCheckForSlot(3, event.scheduleTime);
-});
+export const checkRiverAlerts6pm = functions
+  .runWith({memory: "1GB", timeoutSeconds: 540})
+  .pubsub.schedule("0 18 * * *")
+  .timeZone("America/Denver")
+  .onRun(async (context) => {
+    await runAlertCheckForSlot(3, context.timestamp);
+  });
 
 // Slot 4: 12:00 AM Mountain Time
-export const checkRiverAlerts12am = onSchedule({
-  schedule: "0 0 * * *",
-  timeZone: "America/Denver",
-  memory: "1GiB",
-  timeoutSeconds: 540,
-}, async (event) => {
-  await runAlertCheckForSlot(4, event.scheduleTime);
-});
+export const checkRiverAlerts12am = functions
+  .runWith({memory: "1GB", timeoutSeconds: 540})
+  .pubsub.schedule("0 0 * * *")
+  .timeZone("America/Denver")
+  .onRun(async (context) => {
+    await runAlertCheckForSlot(4, context.timestamp);
+  });
 
 /**
  * Shared logic for running alert checks
+ * @param {number} slot - The time slot number (1-4)
+ * @param {string} scheduleTime - The scheduled execution time
  */
 async function runAlertCheckForSlot(
   slot: number,
@@ -93,54 +91,60 @@ async function runAlertCheckForSlot(
  * Manual trigger for testing specific time slots
  * Usage: POST with body {"slot": 1} to test slot 1
  */
-export const triggerAlertCheck = onRequest(async (request, response) => {
-  logger.info("🧪 Manual alert check triggered");
+export const triggerAlertCheck = functions.https.onRequest(
+  async (request, response) => {
+    logger.info("🧪 Manual alert check triggered");
 
-  try {
-    const slot = request.body?.slot || 1;
-    
-    if (slot < 1 || slot > 4) {
-      response.status(400).json({
-        success: false,
-        error: "Slot must be between 1 and 4",
+    try {
+      const slot = request.body?.slot || 1;
+
+      if (slot < 1 || slot > 4) {
+        response.status(400).json({
+          success: false,
+          error: "Slot must be between 1 and 4",
+        });
+        return;
+      }
+
+      const {checkAlertsForTimeSlot} = await import(
+        "./notification-service.js"
+      );
+      const result = await checkAlertsForTimeSlot(slot);
+
+      logger.info(`✅ Manual check for slot ${slot} completed`, result);
+
+      response.json({
+        success: true,
+        slot,
+        message: `Alert check for slot ${slot} completed successfully`,
+        ...result,
       });
-      return;
+    } catch (error) {
+      logger.error("❌ Manual alert check failed", {error});
+
+      response.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-
-    const {checkAlertsForTimeSlot} = await import("./notification-service.js");
-    const result = await checkAlertsForTimeSlot(slot);
-
-    logger.info(`✅ Manual check for slot ${slot} completed`, result);
-
-    response.json({
-      success: true,
-      slot,
-      message: `Alert check for slot ${slot} completed successfully`,
-      ...result,
-    });
-  } catch (error) {
-    logger.error("❌ Manual alert check failed", {error});
-
-    response.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-    });
   }
-});
+);
 
 /**
  * Health check endpoint
  */
-export const healthCheck = onRequest(async (request, response) => {
-  response.json({
-    status: "healthy",
-    timestamp: new Date().toISOString(),
-    message: "RIVR notification system is running",
-    schedule: {
-      slot1: "6:00 AM MT (all users)",
-      slot2: "12:00 PM MT (3x, 4x users)",
-      slot3: "6:00 PM MT (2x, 3x, 4x users)",
-      slot4: "12:00 AM MT (4x users)",
-    },
-  });
-});
+export const healthCheck = functions.https.onRequest(
+  async (request, response) => {
+    response.json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      message: "RIVR notification system is running (1st gen)",
+      schedule: {
+        slot1: "6:00 AM MT (all users)",
+        slot2: "12:00 PM MT (3x, 4x users)",
+        slot3: "6:00 PM MT (2x, 3x, 4x users)",
+        slot4: "12:00 AM MT (4x users)",
+      },
+    });
+  }
+);

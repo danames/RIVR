@@ -3,24 +3,24 @@ import 'package:flutter/cupertino.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart'; // ADD: FCM import
 import 'package:provider/provider.dart';
-import 'package:rivrflow/core/pages/navigation_error_page.dart';
-import 'package:rivrflow/features/auth/providers/auth_provider.dart';
-import 'package:rivrflow/core/providers/reach_data_provider.dart';
-import 'package:rivrflow/core/providers/favorites_provider.dart';
-import 'package:rivrflow/core/providers/theme_provider.dart';
-import 'package:rivrflow/core/services/theme_service.dart';
-import 'package:rivrflow/core/services/map_preference_service.dart';
-import 'package:rivrflow/features/favorites/favorites_page.dart';
-import 'package:rivrflow/features/forecast/pages/reach_overview_page.dart';
-import 'package:rivrflow/features/forecast/pages/short_range_detail_page.dart';
-import 'package:rivrflow/features/forecast/pages/medium_range_detail_page.dart';
-import 'package:rivrflow/features/forecast/pages/long_range_detail_page.dart';
-import 'package:rivrflow/features/forecast/pages/hydrograph_page.dart';
-import 'package:rivrflow/features/favorites/pages/image_selection_page.dart';
-import 'package:rivrflow/features/settings/pages/notifications_settings_page.dart';
-import 'package:rivrflow/features/settings/pages/app_theme_settings_page.dart';
-import 'package:rivrflow/features/settings/pages/sponsors_page.dart';
-import 'package:rivrflow/features/map/widgets/map_with_favorites.dart';
+import 'package:rivr/core/pages/navigation_error_page.dart';
+import 'package:rivr/features/auth/providers/auth_provider.dart';
+import 'package:rivr/core/providers/reach_data_provider.dart';
+import 'package:rivr/core/providers/favorites_provider.dart';
+import 'package:rivr/core/providers/theme_provider.dart';
+import 'package:rivr/core/services/theme_service.dart';
+import 'package:rivr/core/services/map_preference_service.dart';
+import 'package:rivr/features/favorites/favorites_page.dart';
+import 'package:rivr/features/forecast/pages/reach_overview_page.dart';
+import 'package:rivr/features/forecast/pages/short_range_detail_page.dart';
+import 'package:rivr/features/forecast/pages/medium_range_detail_page.dart';
+import 'package:rivr/features/forecast/pages/long_range_detail_page.dart';
+import 'package:rivr/features/forecast/pages/hydrograph_page.dart';
+import 'package:rivr/features/favorites/pages/image_selection_page.dart';
+import 'package:rivr/features/settings/pages/notifications_settings_page.dart';
+import 'package:rivr/features/settings/pages/app_theme_settings_page.dart';
+import 'package:rivr/features/settings/pages/sponsors_page.dart';
+import 'package:rivr/features/map/widgets/map_with_favorites.dart';
 import 'firebase_options.dart';
 import 'features/auth/presentation/pages/auth_coordinator.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -48,17 +48,17 @@ Future<void> main() async {
   // ADD: Register background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  runApp(const RivrFlowApp());
+  runApp(const RivrApp());
 }
 
-class RivrFlowApp extends StatefulWidget {
-  const RivrFlowApp({super.key});
+class RivrApp extends StatefulWidget {
+  const RivrApp({super.key});
 
   @override
-  State<RivrFlowApp> createState() => _RivrFlowAppState();
+  State<RivrApp> createState() => _RivrAppState();
 }
 
-class _RivrFlowAppState extends State<RivrFlowApp> with WidgetsBindingObserver {
+class _RivrAppState extends State<RivrApp> with WidgetsBindingObserver {
   late ThemeProvider _themeProvider;
 
   @override
@@ -108,7 +108,7 @@ class _RivrFlowAppState extends State<RivrFlowApp> with WidgetsBindingObserver {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return CupertinoApp(
-            title: 'RivrFlow',
+            title: 'RIVR',
             theme: themeProvider.themeData,
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,

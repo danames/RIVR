@@ -4,13 +4,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:rivrflow/core/widgets/navigation_button.dart';
-import 'package:rivrflow/features/map/widgets/map_search_widget.dart';
+import 'package:rivr/core/widgets/navigation_button.dart';
+import 'package:rivr/features/map/widgets/map_search_widget.dart';
 // NEW IMPORTS
-import 'package:rivrflow/features/map/widgets/map_control_buttons.dart';
-import 'package:rivrflow/features/map/widgets/base_layer_modal.dart';
-import 'package:rivrflow/features/map/widgets/streams_list_bottom_sheet.dart'; // NEW: Import streams list
-import 'package:rivrflow/features/map/services/map_controls_service.dart';
+import 'package:rivr/features/map/widgets/map_control_buttons.dart';
+import 'package:rivr/features/map/widgets/base_layer_modal.dart';
+import 'package:rivr/features/map/widgets/streams_list_bottom_sheet.dart'; // NEW: Import streams list
+import 'package:rivr/features/map/services/map_controls_service.dart';
 // EXISTING IMPORTS
 import '../../core/config.dart';
 import '../../core/constants.dart';

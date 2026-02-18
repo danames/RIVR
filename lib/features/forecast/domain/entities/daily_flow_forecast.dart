@@ -1,7 +1,7 @@
 // lib/features/forecast/domain/entities/daily_flow_forecast.dart
 
 import 'package:flutter/cupertino.dart';
-import 'package:rivrflow/core/services/flow_unit_preference_service.dart';
+import 'package:rivr/core/services/flow_unit_preference_service.dart';
 
 /// Represents a single day's flow forecast data processed from ensemble forecasts
 ///
@@ -104,7 +104,7 @@ class DailyFlowForecast {
   }
 
   /// Get the color associated with this day's flow category
-  /// Uses rivrflow's standard Cupertino color scheme
+  /// Uses RIVR's standard Cupertino color scheme
   Color get categoryColor {
     switch (flowCategory.toLowerCase()) {
       case 'normal':
@@ -121,7 +121,7 @@ class DailyFlowForecast {
   }
 
   /// Get appropriate icon for this day's flow category
-  /// Uses rivrflow's standard Cupertino icons
+  /// Uses RIVR's standard Cupertino icons
   IconData get categoryIcon {
     switch (flowCategory.toLowerCase()) {
       case 'normal':

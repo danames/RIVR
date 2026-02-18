@@ -4,7 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
-import 'package:rivrflow/core/services/flow_unit_preference_service.dart';
+import 'package:rivr/core/services/flow_unit_preference_service.dart';
 import '../../../core/models/favorite_river.dart';
 import '../../../core/providers/favorites_provider.dart';
 import '../services/flood_risk_video_service.dart';
@@ -226,14 +226,18 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
             widget.favorite.customImageAsset == null) {
           // Category changed, reinitialize video asynchronously
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _initializeVideoBackground();
+            if (mounted) {
+              _initializeVideoBackground();
+            }
           });
         }
 
         // Force video initialization when no custom image is set
         if (widget.favorite.customImageAsset == null && !_isVideoInitialized) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _initializeVideoBackground();
+            if (mounted) {
+              _initializeVideoBackground();
+            }
           });
         }
 
@@ -301,17 +305,26 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
   }
 
   Widget _buildVideoBackground() {
-    if (_isVideoInitialized && _videoController != null) {
-      return Positioned.fill(
-        child: FittedBox(
-          fit: BoxFit.cover,
-          child: SizedBox(
-            width: _videoController!.value.size.width,
-            height: _videoController!.value.size.height,
-            child: VideoPlayer(_videoController!),
+    // Check if video is initialized, controller exists, AND hasn't been disposed
+    if (_isVideoInitialized &&
+        _videoController != null &&
+        _videoController!.value.isInitialized) {
+      try {
+        return Positioned.fill(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: _videoController!.value.size.width,
+              height: _videoController!.value.size.height,
+              child: VideoPlayer(_videoController!),
+            ),
           ),
-        ),
-      );
+        );
+      } catch (e) {
+        // If accessing controller throws error (disposed), fall back to gradient
+        print('Video controller error: $e');
+        return _buildDefaultGradient();
+      }
     } else {
       // Fallback to gradient while video loads or if video fails
       return _buildDefaultGradient();

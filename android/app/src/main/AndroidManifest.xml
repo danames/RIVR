@@ -1,5 +1,5 @@
 <!-- android/app/src/main/AndroidManifest.xml -->
-<!-- RivrFlow - Enhanced with Firebase, notifications, and location support -->
+<!-- RIVR - Enhanced with Firebase, notifications, and location support -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- ============================= -->
@@ -49,7 +49,7 @@
             <data android:mimeType="text/plain" />
         </intent>
         
-        <!-- For RivrFlow deep linking -->
+        <!-- For RIVR deep linking -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="rivr" />

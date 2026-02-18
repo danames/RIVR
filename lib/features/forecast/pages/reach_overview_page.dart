@@ -2,7 +2,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import 'package:rivrflow/core/models/reach_data.dart';
+import 'package:rivr/core/models/reach_data.dart';
 import '../../../core/providers/reach_data_provider.dart';
 import '../widgets/current_flow_status_card.dart';
 import '../widgets/forecast_category_grid.dart';

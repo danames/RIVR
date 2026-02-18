@@ -1,7 +1,7 @@
 // lib/features/auth/presentation/widgets/biometric_button.dart
 
 import 'package:flutter/cupertino.dart';
-import 'package:rivrflow/features/auth/providers/auth_provider.dart';
+import 'package:rivr/features/auth/providers/auth_provider.dart';
 
 class BiometricButton extends StatefulWidget {
   final String text;

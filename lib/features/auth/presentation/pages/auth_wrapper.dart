@@ -2,7 +2,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import 'package:rivrflow/features/auth/providers/auth_provider.dart';
+import 'package:rivr/features/auth/providers/auth_provider.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
@@ -115,7 +115,7 @@ class _AuthWrapperState extends State<AuthWrapper>
   Widget _buildDefaultAuthenticatedView() {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('RivrFlow'),
+        middle: const Text('RIVR'),
         trailing: Consumer<AuthProvider>(
           builder: (context, authProvider, _) {
             return CupertinoButton(

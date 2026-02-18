@@ -1,4 +1,4 @@
-// Custom Navigation Bar Components for RivrFlow
+// Custom Navigation Bar Components for RIVR
 import 'package:flutter/cupertino.dart';
 
 // ========================================

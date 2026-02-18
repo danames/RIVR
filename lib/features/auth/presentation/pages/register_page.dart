@@ -2,7 +2,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import 'package:rivrflow/features/auth/providers/auth_provider.dart';
+import 'package:rivr/features/auth/providers/auth_provider.dart';
 import '../widgets/live_validation_field.dart';
 import '../widgets/managed_async_button.dart';
 import '../widgets/auth_error_display.dart';

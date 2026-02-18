@@ -4,11 +4,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:rivrflow/core/providers/reach_data_provider.dart';
-import 'package:rivrflow/core/services/flow_unit_preference_service.dart';
-import 'package:rivrflow/features/auth/providers/auth_provider.dart';
-import 'package:rivrflow/features/favorites/widgets/favorite_river_card.dart';
-import 'package:rivrflow/features/favorites/widgets/favorites_search_bar.dart';
+import 'package:rivr/core/providers/reach_data_provider.dart';
+import 'package:rivr/core/services/flow_unit_preference_service.dart';
+import 'package:rivr/features/auth/providers/auth_provider.dart';
+import 'package:rivr/features/favorites/widgets/favorite_river_card.dart';
+import 'package:rivr/features/favorites/widgets/favorites_search_bar.dart';
 import '../../../core/providers/favorites_provider.dart';
 import '../../../core/models/favorite_river.dart';
 // ADD: Import the services and models for flow unit handling
@@ -945,7 +945,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       context: context,
       builder: (context) => CupertinoAlertDialog(
         title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out of RivrFlow?'),
+        content: const Text('Are you sure you want to sign out of RIVR?'),
         actions: [
           CupertinoDialogAction(
             child: const Text('Cancel'),
