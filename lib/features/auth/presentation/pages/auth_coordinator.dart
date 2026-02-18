@@ -4,7 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
 import 'package:rivr/features/auth/providers/auth_provider.dart';
-import 'package:rivr/features/auth/services/i_user_settings_service.dart';
+import 'package:rivr/core/services/i_user_settings_service.dart';
 import 'package:rivr/core/services/i_cache_service.dart';
 import '../../../../core/services/app_logger.dart';
 import 'auth_wrapper.dart';

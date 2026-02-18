@@ -19,8 +19,8 @@ import '../services/i_favorites_service.dart';
 import '../services/favorites_service.dart';
 import '../services/i_fcm_service.dart';
 import '../services/fcm_service.dart';
-import '../../features/auth/services/i_user_settings_service.dart';
-import '../../features/auth/services/user_settings_service.dart';
+import '../services/i_user_settings_service.dart';
+import '../services/user_settings_service.dart';
 
 final sl = GetIt.instance;
 

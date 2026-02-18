@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import '../../../core/providers/favorites_provider.dart';
 import 'package:rivr/core/services/i_background_image_service.dart';
 import '../../../core/services/app_logger.dart';
-import 'package:rivr/features/auth/services/i_user_settings_service.dart';
+import 'package:rivr/core/services/i_user_settings_service.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 
 /// Image selection page for choosing custom favorite river images

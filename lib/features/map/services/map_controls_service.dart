@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/map_preference_service.dart';
 import '../../../core/services/app_logger.dart';
 import '../../../core/providers/theme_provider.dart';
-import '../models/map_base_layer.dart';
+import 'package:rivr/core/models/map_base_layer.dart';
 
 class MapControlsService {
   MapboxMap? _mapboxMap;

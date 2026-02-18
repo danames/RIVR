@@ -1,7 +1,7 @@
 // lib/core/services/favorites_service.dart
 
 import '../models/favorite_river.dart';
-import '../../features/auth/services/i_user_settings_service.dart';
+import 'i_user_settings_service.dart';
 import 'app_logger.dart';
 import 'i_auth_service.dart';
 import 'i_favorites_service.dart';

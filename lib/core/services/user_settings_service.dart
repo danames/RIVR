@@ -1,11 +1,11 @@
-// lib/features/auth/services/user_settings_service.dart
+// lib/core/services/user_settings_service.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../core/models/user_settings.dart';
-import '../../../core/services/app_logger.dart';
-import '../../../core/services/error_service.dart';
-import '../../../core/services/i_flow_unit_preference_service.dart';
-import '../../../core/services/i_background_image_service.dart';
+import '../models/user_settings.dart';
+import 'app_logger.dart';
+import 'error_service.dart';
+import 'i_flow_unit_preference_service.dart';
+import 'i_background_image_service.dart';
 import 'i_user_settings_service.dart';
 
 /// Simple service for managing UserSettings with Firestore

@@ -1,7 +1,7 @@
-// lib/features/map/models/map_base_layer.dart
+// lib/core/models/map_base_layer.dart
 //
-// Map base layer enum extracted from base_layer_modal.dart to break
-// circular dependency between core services and feature widgets.
+// Map base layer enum. Lives in core because it's used by
+// core/services/map_preference_service.dart.
 
 import 'package:flutter/cupertino.dart';
 

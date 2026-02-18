@@ -1,6 +1,6 @@
-// lib/features/auth/services/i_user_settings_service.dart
+// lib/core/services/i_user_settings_service.dart
 
-import '../../../core/models/user_settings.dart';
+import '../models/user_settings.dart';
 
 /// Interface for managing UserSettings with Firestore
 abstract class IUserSettingsService {

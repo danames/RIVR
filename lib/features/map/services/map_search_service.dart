@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../core/config.dart';
 import '../../../core/services/app_logger.dart';
+import '../../../core/services/geocoding_service.dart';
 
 /// Simplified place search result model
 class SearchedPlace {
@@ -157,61 +158,12 @@ class MapSearchService {
     }
   }
 
-  /// Convert coordinates to city, state using Mapbox Geocoding API
+  /// Convert coordinates to city, state using Mapbox Geocoding API.
+  /// Delegates to core GeocodingService.
   static Future<Map<String, String?>> reverseGeocode(
     double latitude,
     double longitude,
-  ) async {
-    try {
-      AppLogger.debug('MapSearchService', 'Reverse geocoding $latitude, $longitude');
-
-      final queryParams = {
-        'access_token': AppConfig.mapboxPublicToken,
-        'types': 'place,region',
-      };
-
-      final uri = Uri.parse(
-        '${AppConfig.mapboxSearchApiUrl}$longitude,$latitude.json',
-      ).replace(queryParameters: queryParams);
-
-      final response = await http.get(uri).timeout(AppConfig.httpTimeout);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final features = data['features'] as List;
-
-        if (features.isNotEmpty) {
-          String? city, state;
-
-          for (final feature in features) {
-            final placeType = feature['place_type'] as List?;
-            final text = feature['text'] as String?;
-            final properties = feature['properties'] as Map?;
-
-            if (placeType != null && text != null) {
-              if (placeType.contains('place') && city == null) {
-                city = text;
-              } else if (placeType.contains('region') && state == null) {
-                final shortCode = properties?['short_code'] as String?;
-                if (shortCode != null && shortCode.contains('-')) {
-                  state = shortCode.split('-').last.toUpperCase();
-                } else {
-                  state = text;
-                }
-              }
-            }
-          }
-
-          AppLogger.debug('MapSearchService', 'Reverse geocoded to: $city, $state');
-          return {'city': city, 'state': state};
-        }
-      } else {
-        AppLogger.error('MapSearchService', 'API error ${response.statusCode}: ${response.body}');
-      }
-    } catch (e) {
-      AppLogger.error('MapSearchService', 'Reverse geocoding failed', e);
-    }
-
-    return {'city': null, 'state': null};
+  ) {
+    return GeocodingService.reverseGeocode(latitude, longitude);
   }
 }

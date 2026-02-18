@@ -5,7 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:rivr/features/auth/models/auth_user.dart';
 import '../../../core/services/i_auth_service.dart';
 import '../../../core/models/user_settings.dart';
-import '../services/i_user_settings_service.dart';
+import 'package:rivr/core/services/i_user_settings_service.dart';
 import '../../../core/services/app_logger.dart';
 
 /// Simple authentication state management for RIVR

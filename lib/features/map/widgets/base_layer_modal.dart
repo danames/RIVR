@@ -1,6 +1,6 @@
 // lib/features/map/widgets/base_layer_modal.dart
 import 'package:flutter/cupertino.dart';
-import '../models/map_base_layer.dart';
+import 'package:rivr/core/models/map_base_layer.dart';
 
 class BaseLayerModal extends StatelessWidget {
   final MapBaseLayer currentLayer;

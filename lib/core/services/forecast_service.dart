@@ -1,7 +1,7 @@
 // lib/core/services/forecast_service.dart
 
 import 'package:rivr/core/models/hourly_flow_data.dart';
-import 'package:rivr/features/map/services/map_search_service.dart';
+import 'geocoding_service.dart';
 import '../models/reach_data.dart';
 import 'app_logger.dart';
 import 'i_noaa_api_service.dart';
@@ -50,7 +50,7 @@ class ForecastService implements IForecastService {
           AppLogger.debug('ForecastService', 'Adding location to cached reach via reverse geocoding');
 
           try {
-            final locationData = await MapSearchService.reverseGeocode(
+            final locationData = await GeocodingService.reverseGeocode(
               reach.latitude,
               reach.longitude,
             );
@@ -89,7 +89,7 @@ class ForecastService implements IForecastService {
           AppLogger.debug('ForecastService', 'Performing reverse geocoding for complete location data');
 
           try {
-            final locationData = await MapSearchService.reverseGeocode(
+            final locationData = await GeocodingService.reverseGeocode(
               reach.latitude,
               reach.longitude,
             );

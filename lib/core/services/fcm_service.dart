@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:rivr/core/services/error_service.dart';
 import 'app_logger.dart';
-import 'package:rivr/features/auth/services/i_user_settings_service.dart';
+import 'i_user_settings_service.dart';
 import 'i_fcm_service.dart';
 
 /// Simple FCM service for managing push notification tokens

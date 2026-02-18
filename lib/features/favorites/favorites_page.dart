@@ -13,7 +13,7 @@ import 'package:rivr/features/favorites/widgets/favorite_river_card.dart';
 import 'package:rivr/features/favorites/widgets/favorites_search_bar.dart';
 import '../../../core/providers/favorites_provider.dart';
 import '../../../core/models/favorite_river.dart';
-import 'package:rivr/features/auth/services/i_user_settings_service.dart';
+import 'package:rivr/core/services/i_user_settings_service.dart';
 import '../../../core/models/user_settings.dart';
 
 /// Main favorites page - serves as app home screen
