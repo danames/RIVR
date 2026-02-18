@@ -5,10 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/services/forecast_service.dart';
 import '../../../core/services/error_service.dart';
 import '../../../core/services/app_logger.dart';
-import '../../../core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import 'package:rivr/core/services/i_forecast_service.dart';
+import '../../../core/services/i_flow_unit_preference_service.dart';
 import '../../../core/providers/favorites_provider.dart';
 import '../../../core/constants.dart';
 import '../models/selected_reach.dart';
@@ -35,7 +36,7 @@ class ReachDetailsBottomSheet extends StatefulWidget {
 }
 
 class _ReachDetailsBottomSheetState extends State<ReachDetailsBottomSheet> {
-  final ForecastService _forecastService = ForecastService();
+  final IForecastService _forecastService = GetIt.I<IForecastService>();
 
   // Progressive loading states
   bool _isLoadingFlow = false;
@@ -61,7 +62,7 @@ class _ReachDetailsBottomSheetState extends State<ReachDetailsBottomSheet> {
 
   // Get current flow units from preference service
   String _getCurrentFlowUnit() {
-    final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+    final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
     return currentUnit; // Returns 'CFS' or 'CMS' directly
   }
 

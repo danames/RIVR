@@ -4,21 +4,26 @@ import 'package:rivr/core/models/hourly_flow_data.dart';
 import 'package:rivr/features/map/services/map_search_service.dart';
 import '../models/reach_data.dart';
 import 'app_logger.dart';
-import 'noaa_api_service.dart';
-import 'reach_cache_service.dart';
-import 'flow_unit_preference_service.dart';
+import 'i_noaa_api_service.dart';
+import 'i_reach_cache_service.dart';
+import 'i_flow_unit_preference_service.dart';
+import 'i_forecast_service.dart';
 
 /// Simple service for loading complete forecast data
 /// Combines reach info, return periods, and all forecast types
 /// Now with phased loading for better performance
-class ForecastService {
-  static final ForecastService _instance = ForecastService._internal();
-  factory ForecastService() => _instance;
-  ForecastService._internal();
+class ForecastService implements IForecastService {
+  final INoaaApiService _apiService;
+  final IReachCacheService _cacheService;
+  final IFlowUnitPreferenceService _unitService;
 
-  final NoaaApiService _apiService = NoaaApiService();
-  final ReachCacheService _cacheService = ReachCacheService();
-  final FlowUnitPreferenceService _unitService = FlowUnitPreferenceService();
+  ForecastService({
+    required INoaaApiService apiService,
+    required IReachCacheService cacheService,
+    required IFlowUnitPreferenceService unitService,
+  })  : _apiService = apiService,
+        _cacheService = cacheService,
+        _unitService = unitService;
 
   // Cache computed values to avoid repeated calculations
   final Map<String, double?> _currentFlowCache = {};

@@ -5,7 +5,8 @@ import 'package:rivr/core/models/reach_data.dart';
 import 'package:rivr/features/forecast/widgets/daily_expandable_widget/hourly_display/flow_value_indicator.dart';
 import 'package:rivr/features/forecast/widgets/daily_expandable_widget/hourly_display/micro_bar_chart.dart';
 import 'package:rivr/features/forecast/widgets/daily_expandable_widget/hourly_display/time_slider.dart';
-import '../../../../../core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import '../../../../../core/services/i_flow_unit_preference_service.dart';
 import '../../../domain/entities/daily_flow_forecast.dart';
 
 /// Main widget that displays hourly flow data for a selected day
@@ -53,7 +54,7 @@ class _HourlyFlowDisplayState extends State<HourlyFlowDisplay> {
 
   // Get current flow units
   String _getCurrentFlowUnit() {
-    final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+    final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
     return currentUnit == 'CMS' ? 'CMS' : 'CFS';
   }
 
@@ -160,7 +161,7 @@ class _HourlyFlowDisplayState extends State<HourlyFlowDisplay> {
 
     // Get flow category for the selected hour
     if (widget.reach?.hasReturnPeriods == true && _selectedFlow != null) {
-      final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+      final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
       _selectedCategory = widget.reach!.getFlowCategory(
         _selectedFlow!,
         currentUnit,
@@ -306,7 +307,7 @@ class _HourlyFlowDisplayState extends State<HourlyFlowDisplay> {
 
     String? category;
     if (widget.reach?.hasReturnPeriods == true) {
-      final flowUnit = FlowUnitPreferenceService().currentFlowUnit;
+      final flowUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
       category = widget.reach!.getFlowCategory(flow, flowUnit);
     } else {
       category = widget.forecast.flowCategory;

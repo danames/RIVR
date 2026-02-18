@@ -1,7 +1,8 @@
 // lib/features/forecast/domain/entities/daily_flow_forecast.dart
 
 import 'package:flutter/cupertino.dart';
-import 'package:rivr/core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import 'package:rivr/core/services/i_flow_unit_preference_service.dart';
 
 /// Represents a single day's flow forecast data processed from ensemble forecasts
 ///
@@ -71,7 +72,7 @@ class DailyFlowForecast {
 
   /// ✅ NEW: Get the current flow unit for display purposes
   String get currentUnit {
-    final unitService = FlowUnitPreferenceService();
+    final unitService = GetIt.I<IFlowUnitPreferenceService>();
     return unitService.currentFlowUnit;
   }
 
@@ -255,7 +256,7 @@ class DailyForecastCollection {
 
   /// ✅ NEW: Get the current flow unit for the collection
   String get currentUnit {
-    final unitService = FlowUnitPreferenceService();
+    final unitService = GetIt.I<IFlowUnitPreferenceService>();
     return unitService.currentFlowUnit;
   }
 

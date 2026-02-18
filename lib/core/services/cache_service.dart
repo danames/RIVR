@@ -4,12 +4,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'app_logger.dart';
+import 'i_cache_service.dart';
 
 /// Simple cache service for secure storage and preferences
-class CacheService {
-  static final CacheService _instance = CacheService._internal();
-  factory CacheService() => _instance;
-  CacheService._internal();
+class CacheService implements ICacheService {
+  CacheService();
 
   // Secure storage for sensitive data
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(

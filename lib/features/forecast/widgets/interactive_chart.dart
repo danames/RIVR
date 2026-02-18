@@ -6,8 +6,9 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'dart:math' as math;
 import '../../../core/providers/reach_data_provider.dart';
 import '../../../core/constants.dart';
-import '../../../core/services/forecast_service.dart';
-import '../../../core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import 'package:rivr/core/services/i_forecast_service.dart';
+import '../../../core/services/i_flow_unit_preference_service.dart';
 
 // Simple controller for chart interactions
 class ChartController {
@@ -59,7 +60,7 @@ class _InteractiveChartState extends State<InteractiveChart> {
 
   // Store ensemble data for multiple series
   Map<String, List<ChartData>> _ensembleChartData = {};
-  final ForecastService _forecastService = ForecastService();
+  final IForecastService _forecastService = GetIt.I<IForecastService>();
 
   // Color palette for ensemble members
   static const List<Color> _ensembleColors = [
@@ -80,7 +81,7 @@ class _InteractiveChartState extends State<InteractiveChart> {
 
   // Get current flow units from preference service
   String _getCurrentFlowUnit() {
-    final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+    final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
     return currentUnit == 'CMS' ? 'CMS' : 'CFS';
   }
 

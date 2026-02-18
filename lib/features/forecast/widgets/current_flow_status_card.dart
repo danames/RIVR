@@ -3,9 +3,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:get_it/get_it.dart';
 import 'package:rivr/features/forecast/utils/flow_category_pulse_animator.dart';
 import '../../../core/providers/reach_data_provider.dart';
-import '../../../core/services/flow_unit_preference_service.dart';
+import '../../../core/services/i_flow_unit_preference_service.dart';
 import '../../../core/constants.dart'; // Import for centralized styling
 
 class CurrentFlowStatusCard extends StatefulWidget {
@@ -45,7 +46,7 @@ class _CurrentFlowStatusCardState extends State<CurrentFlowStatusCard>
 
   // Get current flow units from preference service
   String _getCurrentFlowUnit() {
-    final unitService = FlowUnitPreferenceService();
+    final unitService = GetIt.I<IFlowUnitPreferenceService>();
     return unitService.currentFlowUnit; // Returns 'CFS' or 'CMS' directly
   }
 

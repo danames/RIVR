@@ -7,8 +7,8 @@ import 'package:rivr/core/services/app_logger.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:rivr/features/forecast/utils/export_functionality.dart';
 import '../../../core/providers/reach_data_provider.dart';
-import '../../../core/services/forecast_service.dart'
-    hide ChartDataPoint; // NEW: Add forecast service import
+import 'package:get_it/get_it.dart';
+import 'package:rivr/core/services/i_forecast_service.dart';
 import '../widgets/interactive_chart.dart' hide ChartDataPoint;
 import '../widgets/flood_categories_info_sheet.dart';
 
@@ -44,7 +44,7 @@ class _HydrographPageState extends State<HydrographPage> {
   final ScreenshotController _screenshotController = ScreenshotController();
 
   // NEW: Add forecast service
-  final ForecastService _forecastService = ForecastService();
+  final IForecastService _forecastService = GetIt.I<IForecastService>();
 
   @override
   void initState() {

@@ -2,7 +2,8 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:rivr/core/models/reach_data.dart';
-import '../../../../../core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import '../../../../../core/services/i_flow_unit_preference_service.dart';
 import '../../domain/entities/daily_flow_forecast.dart';
 
 /// A horizontal bar that visually represents the flow range for a day
@@ -133,7 +134,7 @@ class FlowRangeBar extends StatelessWidget {
   Color _getColorForFlow(double flow) {
     if (reach?.hasReturnPeriods == true) {
       // Use reach-specific flow categorization if available
-      final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+      final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
       final category = reach!.getFlowCategory(flow, currentUnit);
       return _getColorForCategory(category);
     } else {

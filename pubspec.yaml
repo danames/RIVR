@@ -59,6 +59,7 @@ dependencies:
   video_player: ^2.10.0
   image_picker: ^1.2.0
   flutter_image_compress: ^2.4.0
+  get_it: ^9.2.0
 
 dev_dependencies:
   flutter_test:

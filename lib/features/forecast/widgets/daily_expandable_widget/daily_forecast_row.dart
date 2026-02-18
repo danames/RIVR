@@ -5,7 +5,8 @@ import 'package:rivr/core/models/reach_data.dart';
 import 'package:rivr/core/services/app_logger.dart';
 import 'package:rivr/features/forecast/widgets/daily_expandable_widget/flow_condition_icon.dart';
 import 'package:rivr/features/forecast/widgets/daily_expandable_widget/flow_range_bar.dart';
-import '../../../../core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import '../../../../core/services/i_flow_unit_preference_service.dart';
 import '../../domain/entities/daily_flow_forecast.dart';
 import '../../services/daily_forecast_processor.dart';
 import 'hourly_display/hourly_flow_display.dart';
@@ -64,7 +65,7 @@ class _DailyForecastRowState extends State<DailyForecastRow>
 
   // ✅ FIXED: Get current flow units from preference service (string-based)
   String _getCurrentFlowUnit() {
-    final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+    final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
     return currentUnit == 'CMS'
         ? 'CMS'
         : 'CFS'; // ✅ Fixed: Use strings consistently
@@ -507,7 +508,7 @@ class CompactDailyForecastRow extends StatelessWidget {
 
   // ✅ NEW: Get current flow units from preference service
   String _getCurrentFlowUnit() {
-    final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+    final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
     return currentUnit == 'CMS' ? 'CMS' : 'CFS';
   }
 

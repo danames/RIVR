@@ -1,15 +1,22 @@
 // lib/core/services/favorites_service.dart
 
 import '../models/favorite_river.dart';
-import '../services/auth_service.dart';
-import '../../features/auth/services/user_settings_service.dart';
+import '../../features/auth/services/i_user_settings_service.dart';
 import 'app_logger.dart';
+import 'i_auth_service.dart';
+import 'i_favorites_service.dart';
 
 /// Simple service for managing user's favorite rivers
 /// Uses Firestore via UserSettings.favoriteReachIds - no local storage
-class FavoritesService {
-  final UserSettingsService _userSettingsService = UserSettingsService();
-  final AuthService _authService = AuthService();
+class FavoritesService implements IFavoritesService {
+  final IUserSettingsService _userSettingsService;
+  final IAuthService _authService;
+
+  FavoritesService({
+    required IUserSettingsService settingsService,
+    required IAuthService authService,
+  })  : _userSettingsService = settingsService,
+        _authService = authService;
 
   /// Get current user ID or return null if not signed in
   String? get _currentUserIdOrNull => _authService.currentUser?.uid;

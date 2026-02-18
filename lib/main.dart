@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart'; // ADD: FCM import
 import 'package:rivr/core/services/app_logger.dart';
+import 'package:rivr/core/di/service_locator.dart';
 import 'package:provider/provider.dart';
 import 'package:rivr/core/pages/navigation_error_page.dart';
 import 'package:rivr/features/auth/providers/auth_provider.dart';
@@ -45,6 +46,9 @@ Future<void> main() async {
 
   // Initialize Firebase with proper configuration
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Register all services with dependency injection
+  setupServiceLocator();
 
   // ADD: Register background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);

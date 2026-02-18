@@ -2,7 +2,8 @@
 
 import 'package:flutter/cupertino.dart';
 import '../../../core/constants.dart';
-import '../../../core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import '../../../core/services/i_flow_unit_preference_service.dart';
 import '../domain/entities/daily_flow_forecast.dart';
 
 /// Modal bottom sheet that displays detailed flow information for a selected calendar day
@@ -22,7 +23,7 @@ class CalendarDayDetailSheet extends StatefulWidget {
 class _CalendarDayDetailSheetState extends State<CalendarDayDetailSheet> {
   // Get current flow units from preference service
   String _getCurrentFlowUnit() {
-    final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+    final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
     return currentUnit == 'CMS' ? 'CMS' : 'CFS';
   }
 

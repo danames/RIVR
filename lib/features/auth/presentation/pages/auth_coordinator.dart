@@ -1,11 +1,12 @@
 // lib/features/auth/presentation/pages/auth_coordinator.dart
 
 import 'package:flutter/cupertino.dart';
+import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
 import 'package:rivr/features/auth/providers/auth_provider.dart';
-import '../../../auth/services/user_settings_service.dart';
+import 'package:rivr/features/auth/services/i_user_settings_service.dart';
+import 'package:rivr/core/services/i_cache_service.dart';
 import '../../../../core/services/app_logger.dart';
-import '../../../../core/services/cache_service.dart';
 import 'auth_wrapper.dart';
 
 /// Main authentication flow coordinator for RIVR
@@ -41,7 +42,7 @@ class _AuthCoordinatorState extends State<AuthCoordinator> {
       AppLogger.debug('AuthCoordinator', 'Initializing services...');
 
       // Initialize cache service
-      await CacheService().initialize();
+      await GetIt.I<ICacheService>().initialize();
 
       // Initialize auth provider
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -82,14 +83,14 @@ class _AuthCoordinatorState extends State<AuthCoordinator> {
       final userId = authProvider.currentUser!.uid;
 
       // Store auth data in cache
-      await CacheService().storeAuthData(
+      await GetIt.I<ICacheService>().storeAuthData(
         userId: userId,
         email: authProvider.currentUser!.email,
       );
 
       // Sync user settings after login
       try {
-        await UserSettingsService().syncAfterLogin(userId);
+        await GetIt.I<IUserSettingsService>().syncAfterLogin(userId);
         AppLogger.info('AuthCoordinator', 'User settings synced successfully');
       } catch (e) {
         AppLogger.warning('AuthCoordinator', 'Failed to sync user settings: $e');
@@ -111,7 +112,7 @@ class _AuthCoordinatorState extends State<AuthCoordinator> {
     );
 
     // Clear any cached auth data on failure
-    CacheService().clearAuthData();
+    GetIt.I<ICacheService>().clearAuthData();
 
     // Call optional failure callback
     widget.onAuthFailure?.call();
@@ -123,10 +124,10 @@ class _AuthCoordinatorState extends State<AuthCoordinator> {
       AppLogger.debug('AuthCoordinator', 'Handling sign out');
 
       // Clear all cached data
-      await CacheService().clearEverything();
+      await GetIt.I<ICacheService>().clearEverything();
 
       // Clear user settings cache
-      UserSettingsService().clearCache();
+      GetIt.I<IUserSettingsService>().clearCache();
 
       AppLogger.info('AuthCoordinator', 'Sign out completed');
     } catch (e) {

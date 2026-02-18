@@ -4,17 +4,20 @@ import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:rivr/core/services/error_service.dart';
 import 'app_logger.dart';
-import 'package:rivr/features/auth/services/user_settings_service.dart';
+import 'package:rivr/features/auth/services/i_user_settings_service.dart';
+import 'i_fcm_service.dart';
 
 /// Simple FCM service for managing push notification tokens
 /// Integrates with existing UserSettingsService
-class FCMService {
-  static final FCMService _instance = FCMService._internal();
-  factory FCMService() => _instance;
-  FCMService._internal();
+class FCMService implements IFCMService {
+  final FirebaseMessaging _messaging;
+  final IUserSettingsService _userSettingsService;
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
-  final UserSettingsService _userSettingsService = UserSettingsService();
+  FCMService({
+    FirebaseMessaging? messaging,
+    required IUserSettingsService settingsService,
+  })  : _messaging = messaging ?? FirebaseMessaging.instance,
+        _userSettingsService = settingsService;
 
   bool _isInitialized = false;
   String? _cachedToken;

@@ -4,13 +4,12 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rivr/core/services/app_logger.dart';
 import '../models/reach_data.dart';
+import 'i_reach_cache_service.dart';
 
 /// Simple cache service for ReachData objects
 /// Stores reach info permanently (6 months) to avoid repeated API calls for static data
-class ReachCacheService {
-  static final ReachCacheService _instance = ReachCacheService._internal();
-  factory ReachCacheService() => _instance;
-  ReachCacheService._internal();
+class ReachCacheService implements IReachCacheService {
+  ReachCacheService();
 
   SharedPreferences? _prefs;
 

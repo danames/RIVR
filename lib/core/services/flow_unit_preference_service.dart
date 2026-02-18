@@ -1,15 +1,13 @@
 // lib/core/services/flow_unit_preference_service.dart
 
 import 'package:rivr/core/services/app_logger.dart';
+import 'i_flow_unit_preference_service.dart';
 
 /// Simple service for managing flow unit preferences and conversions
 /// Handles the global flow unit setting and provides conversion utilities
 /// FIXED: Made normalizeUnit public to prevent double conversion
-class FlowUnitPreferenceService {
-  static final FlowUnitPreferenceService _instance =
-      FlowUnitPreferenceService._internal();
-  factory FlowUnitPreferenceService() => _instance;
-  FlowUnitPreferenceService._internal();
+class FlowUnitPreferenceService implements IFlowUnitPreferenceService {
+  FlowUnitPreferenceService();
 
   // Current flow unit preference
   String _currentFlowUnit = 'CFS'; // Default to CFS

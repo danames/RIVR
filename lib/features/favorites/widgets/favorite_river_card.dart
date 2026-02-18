@@ -4,7 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
-import 'package:rivr/core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import 'package:rivr/core/services/i_flow_unit_preference_service.dart';
 import 'package:rivr/core/services/app_logger.dart';
 import '../../../core/models/favorite_river.dart';
 import '../../../core/providers/favorites_provider.dart';
@@ -158,7 +159,7 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
     }
 
     // Get user's preferred flow unit
-    final flowUnitService = FlowUnitPreferenceService();
+    final flowUnitService = GetIt.I<IFlowUnitPreferenceService>();
     final currentUnit = flowUnitService.currentFlowUnit;
 
     // Convert the flow value to current unit before comparison

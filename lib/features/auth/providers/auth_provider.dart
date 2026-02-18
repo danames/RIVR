@@ -1,16 +1,24 @@
 // lib/features/auth/providers/auth_provider.dart
 
 import 'package:flutter/foundation.dart';
+import 'package:get_it/get_it.dart';
 import 'package:rivr/features/auth/models/auth_user.dart';
-import '../../../core/services/auth_service.dart';
+import '../../../core/services/i_auth_service.dart';
 import '../../../core/models/user_settings.dart';
-import '../../auth/services/user_settings_service.dart';
+import '../services/i_user_settings_service.dart';
 import '../../../core/services/app_logger.dart';
 
 /// Simple authentication state management for RIVR
 class AuthProvider with ChangeNotifier {
-  final AuthService _authService = AuthService();
-  final UserSettingsService _userSettingsService = UserSettingsService();
+  final IAuthService _authService;
+  final IUserSettingsService _userSettingsService;
+
+  AuthProvider({
+    IAuthService? authService,
+    IUserSettingsService? userSettingsService,
+  })  : _authService = authService ?? GetIt.I<IAuthService>(),
+        _userSettingsService =
+            userSettingsService ?? GetIt.I<IUserSettingsService>();
 
   // State
   AuthUser? _currentUser;

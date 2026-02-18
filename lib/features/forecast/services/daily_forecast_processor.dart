@@ -2,7 +2,8 @@
 
 import 'package:rivr/core/services/app_logger.dart';
 import '../../../core/models/reach_data.dart';
-import '../../../core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import '../../../core/services/i_flow_unit_preference_service.dart';
 import '../domain/entities/daily_flow_forecast.dart';
 
 /// Service for processing ensemble forecast data into daily summaries
@@ -41,7 +42,7 @@ class DailyForecastProcessor {
     final forecastSeries = selectedData['series'] as ForecastSeries;
 
     // FIXED: Get current unit for display purposes only (data already converted)
-    final unitService = FlowUnitPreferenceService();
+    final unitService = GetIt.I<IFlowUnitPreferenceService>();
     final currentUnit = unitService.currentFlowUnit;
 
     AppLogger.debug('DailyForecastProcessor', 'Using $dataSource for $forecastType (${forecastSeries.data.length} points, already in $currentUnit)');
@@ -272,7 +273,7 @@ class DailyForecastProcessor {
     }
 
     // Use provided unit or get current unit for display
-    final displayUnit = unit ?? FlowUnitPreferenceService().currentFlowUnit;
+    final displayUnit = unit ?? GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
 
     final first = forecasts.first;
     final last = forecasts.last;

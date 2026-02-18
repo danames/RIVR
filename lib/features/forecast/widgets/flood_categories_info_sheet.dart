@@ -2,7 +2,8 @@
 
 import 'package:flutter/cupertino.dart';
 import '../../../core/constants.dart';
-import '../../../core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import '../../../core/services/i_flow_unit_preference_service.dart';
 
 /// Educational bottom sheet that explains flood risk categories based on return periods
 class FloodCategoriesInfoSheet extends StatelessWidget {
@@ -12,7 +13,7 @@ class FloodCategoriesInfoSheet extends StatelessWidget {
 
   // Get current flow units from preference service
   String _getCurrentFlowUnit() {
-    final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+    final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
     return currentUnit == 'CMS' ? 'CMS' : 'CFS';
   }
 
@@ -20,7 +21,7 @@ class FloodCategoriesInfoSheet extends StatelessWidget {
   double? _convertReturnPeriod(double? cmsValue) {
     if (cmsValue == null) return null;
 
-    final unitService = FlowUnitPreferenceService();
+    final unitService = GetIt.I<IFlowUnitPreferenceService>();
     final currentUnit = unitService.currentFlowUnit;
 
     // Return periods are stored in CMS, convert to user preference

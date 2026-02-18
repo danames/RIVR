@@ -3,25 +3,42 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:get_it/get_it.dart';
 import 'package:rivr/core/models/reach_data.dart';
-import 'package:rivr/core/services/noaa_api_service.dart';
-import 'package:rivr/core/services/reach_cache_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/favorite_river.dart';
 import '../services/app_logger.dart';
-import '../services/favorites_service.dart';
-import '../services/forecast_service.dart';
-import '../services/flow_unit_preference_service.dart';
+import '../services/i_favorites_service.dart';
+import '../services/i_forecast_service.dart';
+import '../services/i_reach_cache_service.dart';
+import '../services/i_flow_unit_preference_service.dart';
+import '../services/i_noaa_api_service.dart';
 
 /// State management for user's favorite rivers
 /// Works with cloud-based favorites (reach IDs only) and manages rich data in memory
 /// FIXED: Added unit tracking to prevent double conversion
 class FavoritesProvider with ChangeNotifier {
-  final FavoritesService _favoritesService = FavoritesService();
-  final ForecastService _forecastService = ForecastService();
-  final ReachCacheService _reachCacheService = ReachCacheService();
+  final IFavoritesService _favoritesService;
+  final IForecastService _forecastService;
+  final IReachCacheService _reachCacheService;
+  final IFlowUnitPreferenceService _unitService;
+  final INoaaApiService _apiService;
   final Map<String, Map<int, double>> _sessionReturnPeriods =
       {}; // reachId -> return periods
+
+  FavoritesProvider({
+    IFavoritesService? favoritesService,
+    IForecastService? forecastService,
+    IReachCacheService? reachCacheService,
+    IFlowUnitPreferenceService? unitService,
+    INoaaApiService? apiService,
+  })  : _favoritesService = favoritesService ?? GetIt.I<IFavoritesService>(),
+        _forecastService = forecastService ?? GetIt.I<IForecastService>(),
+        _reachCacheService =
+            reachCacheService ?? GetIt.I<IReachCacheService>(),
+        _unitService =
+            unitService ?? GetIt.I<IFlowUnitPreferenceService>(),
+        _apiService = apiService ?? GetIt.I<INoaaApiService>();
 
   // Current state
   List<FavoriteRiver> _favorites = [];
@@ -448,7 +465,7 @@ class FavoritesProvider with ChangeNotifier {
       final currentFlow = _forecastService.getCurrentFlow(forecast);
 
       // CRITICAL FIX: Store the current flow unit along with the value
-      final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+      final currentUnit = _unitService.currentFlowUnit;
 
       // Store all data in session storage (not persisted to cloud)
       _sessionRiverNames[reachId] = forecast.reach.riverName;
@@ -511,7 +528,7 @@ class FavoritesProvider with ChangeNotifier {
       }
 
       // Fetch fresh return periods
-      final returnPeriods = await NoaaApiService().fetchReturnPeriods(reachId);
+      final returnPeriods = await _apiService.fetchReturnPeriods(reachId);
 
       if (returnPeriods.isNotEmpty) {
         // Parse return periods

@@ -4,6 +4,7 @@ import 'package:rivr/features/forecast/domain/entities/daily_flow_forecast.dart'
 import 'package:rivr/features/forecast/services/daily_forecast_processor.dart';
 
 import '../../../helpers/fake_data.dart';
+import '../../../helpers/test_helpers.dart';
 
 /// Helper to build a ForecastSeries with hourly points spanning multiple days.
 ForecastSeries _buildMultiDaySeries({
@@ -27,6 +28,9 @@ ForecastSeries _buildMultiDaySeries({
 }
 
 void main() {
+  setUpAll(() => setupTestServiceLocator());
+  tearDownAll(() => tearDownServiceLocator());
+
   group('DailyForecastProcessor', () {
     group('processForecastData', () {
       test('returns empty list for empty forecast data', () {

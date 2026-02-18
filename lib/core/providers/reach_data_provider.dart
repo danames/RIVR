@@ -1,15 +1,19 @@
 // lib/core/providers/reach_data_provider.dart
 
 import 'package:flutter/foundation.dart';
+import 'package:get_it/get_it.dart';
 import 'package:rivr/core/models/hourly_flow_data.dart';
 import '../models/reach_data.dart';
 import '../services/app_logger.dart';
-import '../services/forecast_service.dart';
+import '../services/i_forecast_service.dart';
 
 /// State management for reach and forecast data
 /// Now with phased loading and progressive forecast category loading
 class ReachDataProvider with ChangeNotifier {
-  final ForecastService _forecastService = ForecastService();
+  final IForecastService _forecastService;
+
+  ReachDataProvider({IForecastService? forecastService})
+      : _forecastService = forecastService ?? GetIt.I<IForecastService>();
 
   // Current state
   bool _isLoading = false;

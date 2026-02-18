@@ -4,20 +4,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/models/user_settings.dart';
 import '../../../core/services/app_logger.dart';
 import '../../../core/services/error_service.dart';
-import '../../../core/services/flow_unit_preference_service.dart';
-import '../../../core/services/background_image_service.dart'; // NEW: For file management
+import '../../../core/services/i_flow_unit_preference_service.dart';
+import '../../../core/services/i_background_image_service.dart';
+import 'i_user_settings_service.dart';
 
 /// Simple service for managing UserSettings with Firestore
-class UserSettingsService {
-  static final UserSettingsService _instance = UserSettingsService._internal();
-  factory UserSettingsService() => _instance;
-  UserSettingsService._internal();
+class UserSettingsService implements IUserSettingsService {
+  final FirebaseFirestore _firestore;
+  final IFlowUnitPreferenceService _flowUnitService;
+  final IBackgroundImageService _backgroundImageService;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FlowUnitPreferenceService _flowUnitService =
-      FlowUnitPreferenceService();
-  final BackgroundImageService _backgroundImageService =
-      BackgroundImageService(); // NEW: Background service instance
+  UserSettingsService({
+    FirebaseFirestore? firestore,
+    required IFlowUnitPreferenceService unitService,
+    required IBackgroundImageService imageService,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _flowUnitService = unitService,
+        _backgroundImageService = imageService;
 
   // Simple in-memory cache
   UserSettings? _cachedSettings;

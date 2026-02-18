@@ -8,14 +8,12 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:rivr/core/services/app_logger.dart';
+import 'i_background_image_service.dart';
 
 /// Service for handling custom background image operations
 /// Handles picking, compression, storage, and cleanup of custom background images
-class BackgroundImageService {
-  static final BackgroundImageService _instance =
-      BackgroundImageService._internal();
-  factory BackgroundImageService() => _instance;
-  BackgroundImageService._internal();
+class BackgroundImageService implements IBackgroundImageService {
+  BackgroundImageService();
 
   final ImagePicker _imagePicker = ImagePicker();
   static const String _backgroundsFolder = 'custom_backgrounds';

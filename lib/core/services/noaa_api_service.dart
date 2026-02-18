@@ -6,18 +6,21 @@ import '../config.dart';
 import '../models/reach_data.dart';
 import 'app_logger.dart';
 import 'error_service.dart';
-import 'flow_unit_preference_service.dart';
+import 'i_flow_unit_preference_service.dart';
+import 'i_noaa_api_service.dart';
 
 /// Service for fetching data from NOAA APIs
 /// Integrates with existing AppConfig and ErrorService
 /// With selective loading for better performance
-class NoaaApiService {
-  static final NoaaApiService _instance = NoaaApiService._internal();
-  factory NoaaApiService() => _instance;
-  NoaaApiService._internal();
+class NoaaApiService implements INoaaApiService {
+  final http.Client _client;
+  final IFlowUnitPreferenceService _unitService;
 
-  final http.Client _client = http.Client();
-  final FlowUnitPreferenceService _unitService = FlowUnitPreferenceService();
+  NoaaApiService({
+    http.Client? client,
+    required IFlowUnitPreferenceService unitService,
+  })  : _client = client ?? http.Client(),
+        _unitService = unitService;
 
   // Different timeout durations for different request priorities
   static const Duration _quickTimeout = Duration(

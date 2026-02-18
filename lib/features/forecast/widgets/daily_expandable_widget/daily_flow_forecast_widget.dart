@@ -3,7 +3,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:rivr/core/models/reach_data.dart';
 import 'package:rivr/core/services/app_logger.dart';
-import 'package:rivr/core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import 'package:rivr/core/services/i_flow_unit_preference_service.dart';
 import '../../domain/entities/daily_flow_forecast.dart';
 import '../../services/daily_forecast_processor.dart';
 import 'daily_forecast_row.dart';
@@ -57,7 +58,7 @@ class _DailyFlowForecastWidgetState extends State<DailyFlowForecastWidget> {
 
   // Get current flow units from preference service
   String _getCurrentFlowUnit() {
-    final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+    final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
     return currentUnit == 'CMS' ? 'CMS' : 'CFS';
   }
 

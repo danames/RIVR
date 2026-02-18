@@ -3,10 +3,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:rivr/core/services/app_logger.dart';
-import 'package:rivr/core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import 'package:rivr/core/services/i_flow_unit_preference_service.dart';
 import 'package:rivr/features/forecast/widgets/horizontal_flow_timeline.dart';
 import '../../../core/providers/reach_data_provider.dart';
-import '../../../core/services/forecast_service.dart';
+import 'package:rivr/core/services/i_forecast_service.dart';
 import 'current_flow_status_card.dart';
 import 'flow_values_usage_guide.dart';
 
@@ -93,7 +94,7 @@ class ForecastDetailTemplate extends StatefulWidget {
 
 class _ForecastDetailTemplateState extends State<ForecastDetailTemplate> {
   bool _isRefreshing = false;
-  final ForecastService _forecastService = ForecastService();
+  final IForecastService _forecastService = GetIt.I<IForecastService>();
 
   @override
   void initState() {
@@ -446,7 +447,7 @@ class _ForecastDetailTemplateState extends State<ForecastDetailTemplate> {
     final flowCategory = _forecastService.getFlowCategory(forecast);
 
     // Get current unit for display
-    final unitService = FlowUnitPreferenceService();
+    final unitService = GetIt.I<IFlowUnitPreferenceService>();
     final currentUnit = unitService.currentFlowUnit;
 
     return Column(
@@ -517,7 +518,7 @@ class _ForecastDetailTemplateState extends State<ForecastDetailTemplate> {
   // FIXED: Calculate trend using already-converted data
   String _calculateCurrentTrend(dynamic forecast) {
     try {
-      final unitService = FlowUnitPreferenceService();
+      final unitService = GetIt.I<IFlowUnitPreferenceService>();
       final currentUnit = unitService.currentFlowUnit;
 
       // For short range, use hourly data to calculate trend

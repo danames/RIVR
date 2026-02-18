@@ -2,8 +2,9 @@
 
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
+import 'package:get_it/get_it.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import '../../../core/services/cache_service.dart';
+import 'package:rivr/core/services/i_cache_service.dart';
 import '../../../core/services/app_logger.dart';
 import '../services/map_search_service.dart';
 
@@ -101,7 +102,7 @@ class _MapSearchModalState extends State<MapSearchModal> {
 
   Future<void> _loadRecentSearches() async {
     try {
-      final cachedSearches = await CacheService().getRecentSearches();
+      final cachedSearches = await GetIt.I<ICacheService>().getRecentSearches();
       final recentPlaces = cachedSearches
           .map((data) => SearchedPlace.fromCacheData(data))
           .take(4) // Limit to 4 items
@@ -171,7 +172,7 @@ class _MapSearchModalState extends State<MapSearchModal> {
         'context': place.context,
       };
 
-      await CacheService().addRecentSearch(searchData);
+      await GetIt.I<ICacheService>().addRecentSearch(searchData);
 
       // Update UI list
       _recentSearches.removeWhere((p) => p.placeName == place.placeName);

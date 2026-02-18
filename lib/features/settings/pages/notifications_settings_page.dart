@@ -1,10 +1,11 @@
 // lib/features/settings/pages/notifications_settings_page.dart
 
 import 'package:flutter/cupertino.dart';
+import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
-import '../../../features/auth/services/user_settings_service.dart';
-import '../../../core/services/fcm_service.dart';
+import 'package:rivr/features/auth/services/i_user_settings_service.dart';
+import 'package:rivr/core/services/i_fcm_service.dart';
 import '../../../core/services/app_logger.dart';
 import '../../../core/models/user_settings.dart';
 import '../widgets/notification_frequency_picker.dart';
@@ -18,8 +19,8 @@ class NotificationsSettingsPage extends StatefulWidget {
 }
 
 class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
-  final UserSettingsService _userSettingsService = UserSettingsService();
-  final FCMService _fcmService = FCMService();
+  final IUserSettingsService _userSettingsService = GetIt.I<IUserSettingsService>();
+  final IFCMService _fcmService = GetIt.I<IFCMService>();
 
   bool _notificationsEnabled = false;
   int _notificationFrequency = 1;

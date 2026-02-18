@@ -5,7 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:rivr/core/services/app_logger.dart';
 import '../../../core/models/hourly_flow_data.dart';
 import '../../../core/providers/reach_data_provider.dart';
-import '../../../core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import '../../../core/services/i_flow_unit_preference_service.dart';
 import 'dart:math' as math;
 
 enum FlowTimelineViewMode { hourCards, flowWave }
@@ -51,7 +52,7 @@ class _HorizontalFlowTimelineState extends State<HorizontalFlowTimeline> {
 
   // Get current flow units from preference service (string-based)
   String _getCurrentFlowUnit() {
-    final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+    final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
     return currentUnit == 'CMS' ? 'CMS' : 'CFS';
   }
 

@@ -10,7 +10,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:csv/csv.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
-import '../../../core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import '../../../core/services/i_flow_unit_preference_service.dart';
 
 /// Data model for chart points - simplified without confidence values
 class ChartDataPoint {
@@ -184,7 +185,7 @@ class ExportFunctionality {
   }) async {
     try {
       // Get current unit for headers and display
-      final unitService = FlowUnitPreferenceService();
+      final unitService = GetIt.I<IFlowUnitPreferenceService>();
       final currentUnit = unitService.currentFlowUnit;
 
       // Prepare CSV data

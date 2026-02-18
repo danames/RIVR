@@ -1,7 +1,8 @@
 // lib/core/models/reach_data.dart
 
 import '../services/app_logger.dart';
-import '../services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import '../services/i_flow_unit_preference_service.dart';
 
 class ReachData {
   // NOAA reach info
@@ -267,7 +268,7 @@ class ReachData {
   Map<int, double>? getReturnPeriodsInUnit(String targetUnit) {
     if (returnPeriods == null) return null;
 
-    final converter = FlowUnitPreferenceService();
+    final converter = GetIt.I<IFlowUnitPreferenceService>();
     return returnPeriods!.map(
       (year, cmsValue) =>
           MapEntry(year, converter.convertFlow(cmsValue, 'CMS', targetUnit)),
@@ -388,7 +389,7 @@ class ForecastSeries {
     required List<ForecastPoint> originalData,
     DateTime? referenceTime,
   }) {
-    final converter = FlowUnitPreferenceService();
+    final converter = GetIt.I<IFlowUnitPreferenceService>();
 
     // CRITICAL FIX: Normalize units for comparison to prevent double conversion
     final normalizedOriginalUnits = converter.normalizeUnit(originalUnits);

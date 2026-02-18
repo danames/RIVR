@@ -3,17 +3,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
 import 'package:rivr/core/providers/reach_data_provider.dart';
-import 'package:rivr/core/services/flow_unit_preference_service.dart';
+import 'package:rivr/core/services/i_flow_unit_preference_service.dart';
 import 'package:rivr/core/services/app_logger.dart';
 import 'package:rivr/features/auth/providers/auth_provider.dart';
 import 'package:rivr/features/favorites/widgets/favorite_river_card.dart';
 import 'package:rivr/features/favorites/widgets/favorites_search_bar.dart';
 import '../../../core/providers/favorites_provider.dart';
 import '../../../core/models/favorite_river.dart';
-// ADD: Import the services and models for flow unit handling
-import '../../../features/auth/services/user_settings_service.dart';
+import 'package:rivr/features/auth/services/i_user_settings_service.dart';
 import '../../../core/models/user_settings.dart';
 
 /// Main favorites page - serves as app home screen
@@ -56,7 +56,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       final userId = authProvider.currentUser?.uid;
 
       if (userId != null) {
-        final userSettings = await UserSettingsService().getUserSettings(
+        final userSettings = await GetIt.I<IUserSettingsService>().getUserSettings(
           userId,
         );
         if (userSettings != null && mounted) {
@@ -532,8 +532,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
         // Update user settings with new flow unit
         final flowUnit = value == 'CMS' ? FlowUnit.cms : FlowUnit.cfs;
 
-        await UserSettingsService().updateFlowUnit(userId, flowUnit);
-        FlowUnitPreferenceService().setFlowUnit(value);
+        await GetIt.I<IUserSettingsService>().updateFlowUnit(userId, flowUnit);
+        GetIt.I<IFlowUnitPreferenceService>().setFlowUnit(value);
 
         // Clear unit-dependent caches for BOTH providers
         final reachProvider = context.read<ReachDataProvider>();

@@ -2,7 +2,8 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:rivr/core/models/reach_data.dart';
-import '../../../../../core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import '../../../../../core/services/i_flow_unit_preference_service.dart';
 
 /// A compact bar chart that displays hourly flow data with selection highlighting
 ///
@@ -136,7 +137,7 @@ class MicroBarChart extends StatelessWidget {
   Color _getColorForFlow(double flow) {
     if (reach?.hasReturnPeriods == true) {
       // Flow data is already in user's preferred unit
-      final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+      final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
       final category = reach!.getFlowCategory(flow, currentUnit);
       return _getColorForCategory(category);
     } else {
@@ -296,7 +297,7 @@ class _MicroBarChartPainter extends CustomPainter {
   Color _getColorForFlow(double flow) {
     if (reach?.hasReturnPeriods == true) {
       // Flow data is already in user's preferred unit
-      final currentUnit = FlowUnitPreferenceService().currentFlowUnit;
+      final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
       final category = reach!.getFlowCategory(flow, currentUnit);
       return _getColorForCategory(category);
     } else {

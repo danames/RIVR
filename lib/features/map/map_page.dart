@@ -13,10 +13,11 @@ import 'package:rivr/features/map/widgets/base_layer_modal.dart';
 import 'package:rivr/features/map/widgets/streams_list_bottom_sheet.dart'; // NEW: Import streams list
 import 'package:rivr/features/map/services/map_controls_service.dart';
 // EXISTING IMPORTS
+import 'package:get_it/get_it.dart';
+import 'package:rivr/core/services/i_cache_service.dart';
 import '../../core/config.dart';
 import '../../core/constants.dart';
 import '../../core/providers/theme_provider.dart';
-import '../../core/services/cache_service.dart';
 import 'services/map_vector_tiles_service.dart';
 import 'services/map_reach_selection_service.dart';
 import 'services/map_marker_service.dart'; // Dedicated marker service
@@ -86,7 +87,7 @@ class MapPageState extends State<MapPage> {
   /// Initialize cache service for recent searches and other caching needs
   Future<void> _initializeCacheService() async {
     try {
-      await CacheService().initialize();
+      await GetIt.I<ICacheService>().initialize();
       AppLogger.info('MapPage', 'Cache service initialized for recent searches');
     } catch (e) {
       AppLogger.error('MapPage', 'Cache service initialization error', e);

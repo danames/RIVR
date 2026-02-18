@@ -1,6 +1,7 @@
 // lib/core/models/favorite_river.dart
 
-import 'package:rivr/core/services/flow_unit_preference_service.dart';
+import 'package:get_it/get_it.dart';
+import 'package:rivr/core/services/i_flow_unit_preference_service.dart';
 import 'package:rivr/core/services/app_logger.dart';
 
 /// Simple model for storing user's favorite rivers
@@ -131,7 +132,7 @@ class FavoriteRiver {
   String get formattedFlow {
     if (lastKnownFlow == null) return 'No data';
 
-    final unitService = FlowUnitPreferenceService();
+    final unitService = GetIt.I<IFlowUnitPreferenceService>();
     final currentUnit = unitService.currentFlowUnit;
 
     // CRITICAL FIX: Use stored unit if available, otherwise assume CFS for backward compatibility
