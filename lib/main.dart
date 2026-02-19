@@ -17,6 +17,8 @@ import 'package:rivr/features/favorites/favorites_page.dart';
 import 'package:get_it/get_it.dart';
 import 'firebase_options.dart';
 import 'features/auth/presentation/pages/auth_coordinator.dart';
+import 'features/onboarding/pages/onboarding_page.dart';
+import 'features/onboarding/services/onboarding_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 // ADD: Background message handler (must be top-level function)
@@ -57,6 +59,7 @@ class RivrApp extends StatefulWidget {
 
 class _RivrAppState extends State<RivrApp> with WidgetsBindingObserver {
   late ThemeProvider _themeProvider;
+  bool _hasSeenOnboarding = true; // Default true so failure skips onboarding
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
@@ -95,6 +98,12 @@ class _RivrAppState extends State<RivrApp> with WidgetsBindingObserver {
     // Initialize map preference service (loads saved preferences)
     await MapPreferenceService.loadMapPreference();
 
+    // Check if user has completed onboarding
+    final seen = await OnboardingService.hasSeenOnboarding();
+    if (mounted) {
+      setState(() => _hasSeenOnboarding = seen);
+    }
+
     AppLogger.info('Main', 'App services initialized');
   }
 
@@ -119,10 +128,11 @@ class _RivrAppState extends State<RivrApp> with WidgetsBindingObserver {
               GlobalWidgetsLocalizations.delegate,
             ],
             supportedLocales: const [Locale('en', 'US')],
-            // Set FavoritesPage as home page (after authentication)
-            home: AuthCoordinator(
-              onAuthSuccess: (context) => const FavoritesPage(),
-            ),
+            home: _hasSeenOnboarding
+                ? AuthCoordinator(
+                    onAuthSuccess: (context) => const FavoritesPage(),
+                  )
+                : const OnboardingPage(),
             routes: AppRouter.namedRoutes,
             onGenerateRoute: AppRouter.onGenerateRoute,
             onUnknownRoute: AppRouter.onUnknownRoute,

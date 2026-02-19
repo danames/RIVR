@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Placeholder: Explore Rivers / Map -->
+  <rect x="30" y="30" width="140" height="120" rx="12" fill="#30B0C7" opacity="0.15"/>
+  <circle cx="70" cy="70" r="8" fill="#30B0C7" opacity="0.5"/>
+  <circle cx="130" cy="90" r="6" fill="#30B0C7" opacity="0.5"/>
+  <circle cx="100" cy="60" r="5" fill="#30B0C7" opacity="0.5"/>
+  <path d="M40 110 Q80 80 120 100 Q150 110 170 95" stroke="#30B0C7" stroke-width="3" fill="none" opacity="0.7"/>
+  <path d="M35 125 Q75 100 110 115 Q145 125 165 110" stroke="#30B0C7" stroke-width="2" fill="none" opacity="0.5"/>
+  <text x="100" y="175" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#30B0C7">Explore</text>
+</svg>

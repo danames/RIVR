@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Placeholder: Welcome to RIVR -->
+  <circle cx="100" cy="80" r="50" fill="#007AFF" opacity="0.2"/>
+  <path d="M60 100 Q100 60 140 100 Q100 80 60 100Z" fill="#007AFF" opacity="0.6"/>
+  <path d="M50 110 Q100 75 150 110 Q100 90 50 110Z" fill="#007AFF" opacity="0.4"/>
+  <path d="M40 120 Q100 90 160 120 Q100 105 40 120Z" fill="#007AFF" opacity="0.3"/>
+  <text x="100" y="160" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#007AFF" font-weight="bold">RIVR</text>
+</svg>

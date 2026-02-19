@@ -5,6 +5,7 @@
 class AppRoutes {
   AppRoutes._();
 
+  static const onboarding = '/onboarding';
   static const favorites = '/favorites';
   static const map = '/map';
   static const forecast = '/forecast';

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Placeholder: Save & Monitor / Heart + Bell -->
+  <circle cx="100" cy="80" r="50" fill="#FF2D55" opacity="0.1"/>
+  <!-- Heart shape -->
+  <path d="M100 115 C70 90 55 65 75 55 C90 48 100 60 100 60 C100 60 110 48 125 55 C145 65 130 90 100 115Z" fill="#FF2D55" opacity="0.5"/>
+  <!-- Bell icon (small) -->
+  <path d="M140 55 C140 45 150 45 150 55 L152 70 L138 70 Z" fill="#FF2D55" opacity="0.4"/>
+  <circle cx="145" cy="43" r="3" fill="#FF2D55" opacity="0.4"/>
+  <text x="100" y="175" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#FF2D55">Monitor</text>
+</svg>

@@ -60,6 +60,7 @@ dependencies:
   image_picker: ^1.2.0
   flutter_image_compress: ^2.4.0
   get_it: ^9.2.0
+  flutter_svg: ^2.0.17
 
   flutter_localizations:
     sdk: flutter
@@ -94,6 +95,7 @@ flutter:
     - assets/images/rivers/big_water/
     - assets/images/sponsors/
     - assets/videos/
+    - assets/images/onboarding/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
