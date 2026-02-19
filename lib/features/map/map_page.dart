@@ -289,7 +289,7 @@ class MapPageState extends State<MapPage> {
       AppLogger.debug('MapPage', 'Services initialized, loading initial content...');
 
       // Load vector tiles and location in parallel (independent operations)
-      await Future.wait([
+      final results = await Future.wait<Object?>([
         _vectorTilesService.loadRiverReaches(),
         _controlsService.initializeLocation(),
       ]);
@@ -302,6 +302,12 @@ class MapPageState extends State<MapPage> {
       setState(() {
         _isLoading = false;
       });
+
+      // On first visit (no saved camera), fly to device location
+      if (_savedCamera == null && results[1] != null) {
+        await _controlsService.recenterToDeviceLocation();
+        AppLogger.info('MapPage', 'First visit — centered on device location');
+      }
     } catch (e) {
       AppLogger.error('MapPage', 'Map creation error', e);
       setState(() {
