@@ -543,15 +543,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
             .read<FavoritesProvider>(); // ADD: Get favorites provider
 
         reachProvider.clearUnitDependentCaches();
-        favoritesProvider
-            .clearUnitDependentCaches(); // Clear favorites caches too!
-
-        // Force UI rebuild to show new units
-        if (mounted) {
-          setState(() {
-            // This triggers rebuild with new unit display values
-          });
-        }
+        favoritesProvider.clearUnitDependentCaches();
       } else {
         // Revert UI state if no user
         if (mounted) {
