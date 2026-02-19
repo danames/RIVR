@@ -13,6 +13,8 @@ class LiveValidationField extends StatefulWidget {
   final String? Function(String?)? validator;
   final void Function(String)? onChanged;
   final FocusNode? focusNode;
+  final TextInputAction? textInputAction;
+  final void Function(String)? onSubmitted;
 
   const LiveValidationField({
     super.key,
@@ -25,6 +27,8 @@ class LiveValidationField extends StatefulWidget {
     this.validator,
     this.onChanged,
     this.focusNode,
+    this.textInputAction,
+    this.onSubmitted,
   });
 
   @override
@@ -152,6 +156,8 @@ class _LiveValidationFieldState extends State<LiveValidationField> {
                     focusNode: _focusNode,
                     obscureText: widget.obscureText,
                     keyboardType: widget.keyboardType,
+                    textInputAction: widget.textInputAction,
+                    onSubmitted: widget.onSubmitted,
                     onChanged: _onTextChanged,
                     placeholder: widget.placeholder,
                     decoration: const BoxDecoration(),

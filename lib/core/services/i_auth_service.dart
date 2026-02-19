@@ -27,4 +27,6 @@ abstract class IAuthService {
   Future<AuthResult> signInWithBiometrics();
   Future<AuthResult> updateDisplayName(String displayName);
   Future<void> reloadUser();
+  Future<AuthResult> sendEmailVerification();
+  Future<bool> checkEmailVerified();
 }

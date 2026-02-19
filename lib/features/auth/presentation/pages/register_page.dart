@@ -8,6 +8,7 @@ import 'package:rivr/features/auth/providers/auth_provider.dart';
 import '../widgets/live_validation_field.dart';
 import '../widgets/managed_async_button.dart';
 import '../widgets/auth_error_display.dart';
+import '../widgets/password_strength_indicator.dart';
 
 class RegisterPage extends StatefulWidget {
   final VoidCallback onSwitchToLogin;
@@ -33,6 +34,14 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _firstNameFocusNode.requestFocus();
+    });
+  }
 
   @override
   void dispose() {
@@ -155,9 +164,12 @@ class _RegisterPageState extends State<RegisterPage> {
                     focusNode: _firstNameFocusNode,
                     placeholder: 'First Name',
                     keyboardType: TextInputType.name,
+                    textInputAction: TextInputAction.next,
                     prefixIcon: CupertinoIcons.person,
                     validator: _validateName,
                     onChanged: (_) => authProvider.clearMessages(),
+                    onSubmitted: (_) =>
+                        _lastNameFocusNode.requestFocus(),
                   ),
 
                   // Last name field
@@ -166,9 +178,12 @@ class _RegisterPageState extends State<RegisterPage> {
                     focusNode: _lastNameFocusNode,
                     placeholder: 'Last Name',
                     keyboardType: TextInputType.name,
+                    textInputAction: TextInputAction.next,
                     prefixIcon: CupertinoIcons.person,
                     validator: _validateName,
                     onChanged: (_) => authProvider.clearMessages(),
+                    onSubmitted: (_) =>
+                        _emailFocusNode.requestFocus(),
                   ),
 
                   // Email field
@@ -177,9 +192,12 @@ class _RegisterPageState extends State<RegisterPage> {
                     focusNode: _emailFocusNode,
                     placeholder: 'Email',
                     keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
                     prefixIcon: CupertinoIcons.mail,
                     validator: _validateEmail,
                     onChanged: (_) => authProvider.clearMessages(),
+                    onSubmitted: (_) =>
+                        _passwordFocusNode.requestFocus(),
                   ),
 
                   // Password field
@@ -188,6 +206,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     focusNode: _passwordFocusNode,
                     placeholder: 'Password',
                     obscureText: _obscurePassword,
+                    textInputAction: TextInputAction.next,
                     prefixIcon: CupertinoIcons.lock,
                     validator: _validatePassword,
                     suffixIcon: CupertinoButton(
@@ -207,6 +226,18 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
                     onChanged: (_) => authProvider.clearMessages(),
+                    onSubmitted: (_) =>
+                        _confirmPasswordFocusNode.requestFocus(),
+                  ),
+
+                  // Password strength indicator
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _passwordController,
+                    builder: (context, value, _) {
+                      return PasswordStrengthIndicator(
+                        password: value.text,
+                      );
+                    },
                   ),
 
                   // Confirm password field
@@ -215,6 +246,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     focusNode: _confirmPasswordFocusNode,
                     placeholder: 'Confirm Password',
                     obscureText: _obscureConfirmPassword,
+                    textInputAction: TextInputAction.done,
                     prefixIcon: CupertinoIcons.lock_shield,
                     validator: _validateConfirmPassword,
                     suffixIcon: CupertinoButton(
@@ -234,6 +266,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
                     onChanged: (_) => authProvider.clearMessages(),
+                    onSubmitted: (_) => _handleRegister(),
                   ),
                   const SizedBox(height: 10),
 

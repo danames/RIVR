@@ -124,6 +124,14 @@ class AuthService implements IAuthService {
         lastName: lastName,
       );
 
+      // Send email verification (fire-and-forget)
+      try {
+        await user.sendEmailVerification();
+        AppLogger.info('AuthService', 'Verification email sent to ${email.trim()}');
+      } catch (e) {
+        AppLogger.warning('AuthService', 'Failed to send verification email: $e');
+      }
+
       return AuthResult.success(user);
     } on FirebaseAuthException catch (e) {
       AppLogger.error('AuthService', 'Registration FirebaseAuthException: ${e.code} - ${e.message}', e);
@@ -417,6 +425,46 @@ class AuthService implements IAuthService {
       await currentUser?.reload();
     } catch (e) {
       AppLogger.error('AuthService', 'Error reloading user: $e', e);
+    }
+  }
+
+  // MARK: - Email Verification
+
+  /// Send email verification to current user
+  @override
+  Future<AuthResult> sendEmailVerification() async {
+    try {
+      if (currentUser == null) {
+        return AuthResult.failure('No user signed in');
+      }
+
+      await currentUser!.sendEmailVerification().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Verification email request timed out'),
+      );
+
+      AppLogger.info('AuthService', 'Verification email sent');
+      return AuthResult.success(null, message: 'Verification email sent');
+    } catch (e) {
+      AppLogger.error('AuthService', 'Error sending verification email: $e', e);
+      return AuthResult.failure('Failed to send verification email: ${e.toString()}');
+    }
+  }
+
+  /// Check if current user's email is verified (reloads user first)
+  @override
+  Future<bool> checkEmailVerified() async {
+    try {
+      if (currentUser == null) return false;
+
+      await currentUser!.reload();
+      // Must re-read from FirebaseAuth after reload to get updated state
+      final verified = _firebaseAuth.currentUser?.emailVerified ?? false;
+      AppLogger.debug('AuthService', 'Email verified: $verified');
+      return verified;
+    } catch (e) {
+      AppLogger.error('AuthService', 'Error checking email verification: $e', e);
+      return false;
     }
   }
 }

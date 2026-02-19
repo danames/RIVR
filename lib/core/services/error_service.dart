@@ -17,17 +17,17 @@ class ErrorService {
     switch (exception.code) {
       // Email/Password errors
       case 'invalid-email':
-        return 'Please enter a valid email address.';
+        return 'Please check your email address — it doesn\'t look quite right.';
       case 'user-disabled':
         return 'This account has been disabled. Please contact support.';
       case 'user-not-found':
-        return 'No account found with this email address.';
+        return 'No account found with this email. Would you like to create one?';
       case 'wrong-password':
-        return 'Incorrect password. Please try again.';
+        return 'Incorrect password. Please try again or reset your password.';
       case 'email-already-in-use':
-        return 'An account already exists with this email address.';
+        return 'An account with this email already exists. Try signing in instead.';
       case 'weak-password':
-        return 'Password must be at least 6 characters long.';
+        return 'Password is too weak. Use at least 6 characters with a mix of letters and numbers.';
       case 'operation-not-allowed':
         return 'This sign-in method is not enabled. Please contact support.';
 
@@ -43,7 +43,7 @@ class ErrorService {
 
       // Rate limiting and security
       case 'too-many-requests':
-        return 'Too many failed attempts. Please wait a few minutes and try again.';
+        return 'Too many attempts. Please wait a few minutes and try again.';
       case 'invalid-verification-code':
         return 'Invalid verification code. Please check and try again.';
       case 'invalid-verification-id':
@@ -51,7 +51,7 @@ class ErrorService {
 
       // Network and connectivity
       case 'network-request-failed':
-        return 'Network error. Please check your connection and try again.';
+        return 'No internet connection. Please check your network and try again.';
       case 'timeout':
         return 'Request timed out. Please check your connection and try again.';
 

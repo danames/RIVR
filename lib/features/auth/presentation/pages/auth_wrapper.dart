@@ -6,8 +6,9 @@ import 'package:rivr/features/auth/providers/auth_provider.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
+import 'email_verification_page.dart';
 
-enum AuthPageType { login, register, forgotPassword }
+enum AuthPageType { login, register, forgotPassword, emailVerification }
 
 class AuthWrapper extends StatefulWidget {
   final Widget? authenticatedChild;
@@ -52,6 +53,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
         return RegisterPage(onSwitchToLogin: _switchToLogin);
       case AuthPageType.forgotPassword:
         return ForgotPasswordPage(onBackToLogin: _switchToLogin);
+      case AuthPageType.emailVerification:
+        return EmailVerificationPage(
+          onSignOut: () async {
+            final authProvider =
+                Provider.of<AuthProvider>(context, listen: false);
+            await authProvider.signOut();
+            _switchToRegister();
+          },
+        );
     }
   }
 
@@ -63,6 +73,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
         if (!authProvider.isInitialized) {
           return const CupertinoPageScaffold(
             child: Center(child: CupertinoActivityIndicator(radius: 20)),
+          );
+        }
+
+        // Show verification page if awaiting email verification
+        if (authProvider.isAwaitingEmailVerification) {
+          return EmailVerificationPage(
+            onSignOut: () async {
+              await authProvider.signOut();
+              _switchToRegister();
+            },
           );
         }
 

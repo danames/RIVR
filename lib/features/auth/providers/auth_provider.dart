@@ -28,11 +28,14 @@ class AuthProvider with ChangeNotifier {
   String _errorMessage = '';
   String _successMessage = '';
   bool _isInitialized = false;
+  bool _isAwaitingEmailVerification = false;
 
   // Getters
   AuthUser? get currentUser => _currentUser;
   UserSettings? get currentUserSettings => _currentUserSettings;
-  bool get isAuthenticated => _currentUser != null;
+  bool get isAuthenticated =>
+      _currentUser != null && !_isAwaitingEmailVerification;
+  bool get isAwaitingEmailVerification => _isAwaitingEmailVerification;
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
   String get successMessage => _successMessage;
@@ -52,11 +55,18 @@ class AuthProvider with ChangeNotifier {
         _currentUser = AuthUser.fromFirebaseUser(firebaseUser);
         AppLogger.info('AuthProvider', 'User signed in: ${_currentUser!.uid}');
 
+        // Gate on email verification
+        if (!firebaseUser.emailVerified) {
+          _isAwaitingEmailVerification = true;
+          AppLogger.info('AuthProvider', 'Email not verified, awaiting verification');
+        }
+
         // Fetch user settings
         await _loadUserSettings();
       } else {
         _currentUser = null;
         _currentUserSettings = null;
+        _isAwaitingEmailVerification = false;
         AppLogger.info('AuthProvider', 'User signed out');
       }
       notifyListeners();
@@ -66,6 +76,9 @@ class AuthProvider with ChangeNotifier {
     final firebaseUser = _authService.currentUser;
     if (firebaseUser != null) {
       _currentUser = AuthUser.fromFirebaseUser(firebaseUser);
+      if (!firebaseUser.emailVerified) {
+        _isAwaitingEmailVerification = true;
+      }
       await _loadUserSettings();
     }
 
@@ -161,7 +174,8 @@ class AuthProvider with ChangeNotifier {
     _setLoading(false);
 
     if (result.isSuccess) {
-      _setSuccess('Account created successfully');
+      _isAwaitingEmailVerification = true;
+      _setSuccess('Account created! Please verify your email.');
       return true;
     } else {
       _setError(result.error ?? 'Registration failed');
@@ -211,6 +225,49 @@ class AuthProvider with ChangeNotifier {
       _setError(result.error ?? 'Sign out failed');
     }
   }
+
+  // MARK: - Email Verification
+
+  /// Send verification email to current user
+  Future<bool> sendVerificationEmail() async {
+    _setLoading(true);
+    _clearMessages();
+
+    final result = await _authService.sendEmailVerification();
+
+    _setLoading(false);
+
+    if (result.isSuccess) {
+      _setSuccess('Verification email sent. Check your inbox.');
+      return true;
+    } else {
+      _setError(result.error ?? 'Failed to send verification email');
+      return false;
+    }
+  }
+
+  /// Check if current user's email has been verified
+  Future<bool> checkEmailVerified() async {
+    _setLoading(true);
+    _clearMessages();
+
+    final verified = await _authService.checkEmailVerified();
+
+    _setLoading(false);
+
+    if (verified) {
+      _isAwaitingEmailVerification = false;
+      _setSuccess('Email verified successfully!');
+      notifyListeners();
+      return true;
+    } else {
+      _setError('Email not yet verified. Check your inbox and try again.');
+      return false;
+    }
+  }
+
+  /// Get the current user's email address (for display on verification page)
+  String get currentUserEmail => _currentUser?.email ?? '';
 
   // MARK: - Biometric Authentication
 
