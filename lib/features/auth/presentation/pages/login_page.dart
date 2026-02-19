@@ -83,64 +83,41 @@ class _LoginPageState extends State<LoginPage> {
           ? CupertinoColors.black
           : CupertinoColors.systemGroupedBackground,
       child: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Consumer<AuthProvider>(
-            builder: (context, authProvider, _) {
-              return Column(
-                children: [
-                  const SizedBox(height: 60),
-
-                  // App logo
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          primaryColor,
-                          primaryColor.withValues(alpha: 0.7),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.drop_fill,
-                      size: 50,
-                      color: CupertinoColors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Consumer<AuthProvider>(
+                  builder: (context, authProvider, _) {
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          children: [
+                            const SizedBox(height: 60),
 
                   // Title
                   Text(
-                    'RIVR',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: brightness == Brightness.dark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  Text(
-                    'River Information Visualization and Risk',
+                    'Welcome to',
                     style: TextStyle(
                       fontSize: 16,
                       color: brightness == Brightness.dark
                           ? CupertinoColors.systemGrey
                           : CupertinoColors.systemGrey2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  Text(
+                    'RIVR',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      color: brightness == Brightness.dark
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -257,49 +234,62 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // Terms of Service & Privacy Policy
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text.rich(
-                      TextSpan(
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: CupertinoColors.systemGrey,
+                          ],
                         ),
-                        children: [
-                          const TextSpan(text: 'By continuing, you agree to our '),
-                          TextSpan(
-                            text: 'Terms of Service',
-                            style: TextStyle(color: primaryColor),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () => launchUrl(
-                                    Uri.parse('https://www.hydromap.com'),
-                                    mode: LaunchMode.externalApplication,
-                                  ),
+                        // Terms of Service & Privacy Policy
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 32,
+                            right: 32,
+                            bottom: 30,
+                            top: 16,
                           ),
-                          const TextSpan(text: ' and '),
-                          TextSpan(
-                            text: 'Privacy Policy',
-                            style: TextStyle(color: primaryColor),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () => launchUrl(
-                                    Uri.parse('https://www.hydromap.com'),
-                                    mode: LaunchMode.externalApplication,
-                                  ),
+                          child: Text.rich(
+                            TextSpan(
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: CupertinoColors.systemGrey,
+                              ),
+                              children: [
+                                const TextSpan(
+                                    text:
+                                        'By continuing, you agree to our '),
+                                TextSpan(
+                                  text: 'Terms of Service',
+                                  style: TextStyle(color: primaryColor),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () => launchUrl(
+                                          Uri.parse(
+                                              'https://www.hydromap.com'),
+                                          mode:
+                                              LaunchMode.externalApplication,
+                                        ),
+                                ),
+                                const TextSpan(text: ' and '),
+                                TextSpan(
+                                  text: 'Privacy Policy',
+                                  style: TextStyle(color: primaryColor),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () => launchUrl(
+                                          Uri.parse(
+                                              'https://www.hydromap.com'),
+                                          mode:
+                                              LaunchMode.externalApplication,
+                                        ),
+                                ),
+                                const TextSpan(text: '. v1.0.1'),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          const TextSpan(text: '. v1.0.1'),
-                        ],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                ],
-              );
-            },
-          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

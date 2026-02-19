@@ -1,7 +1,9 @@
 // lib/features/auth/presentation/pages/register_page.dart
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:rivr/features/auth/providers/auth_provider.dart';
 import '../widgets/live_validation_field.dart';
 import '../widgets/managed_async_button.dart';
@@ -108,61 +110,41 @@ class _RegisterPageState extends State<RegisterPage> {
           ? CupertinoColors.black
           : CupertinoColors.systemGroupedBackground,
       child: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Consumer<AuthProvider>(
-            builder: (context, authProvider, _) {
-              return Column(
-                children: [
-                  const SizedBox(height: 40),
-
-                  // App logo
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [primaryColor, primaryColor.withValues(alpha: 0.7)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.drop_fill,
-                      size: 40,
-                      color: CupertinoColors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Consumer<AuthProvider>(
+                  builder: (context, authProvider, _) {
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          children: [
+                            const SizedBox(height: 40),
 
                   // Title
                   Text(
-                    'Create Account',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: brightness == Brightness.dark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  Text(
-                    'Join RIVR today',
+                    'Create your',
                     style: TextStyle(
                       fontSize: 16,
                       color: brightness == Brightness.dark
                           ? CupertinoColors.systemGrey
                           : CupertinoColors.systemGrey2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  Text(
+                    'RIVR Account',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      color: brightness == Brightness.dark
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
                     ),
                   ),
                   const SizedBox(height: 30),
@@ -307,11 +289,62 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 30),
-                ],
-              );
-            },
-          ),
+                          ],
+                        ),
+                        // Terms of Service & Privacy Policy
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 32,
+                            right: 32,
+                            bottom: 30,
+                            top: 16,
+                          ),
+                          child: Text.rich(
+                            TextSpan(
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: CupertinoColors.systemGrey,
+                              ),
+                              children: [
+                                const TextSpan(
+                                    text:
+                                        'By creating an account, you agree to our '),
+                                TextSpan(
+                                  text: 'Terms of Service',
+                                  style: TextStyle(color: primaryColor),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () => launchUrl(
+                                          Uri.parse(
+                                              'https://www.hydromap.com'),
+                                          mode:
+                                              LaunchMode.externalApplication,
+                                        ),
+                                ),
+                                const TextSpan(text: ' and '),
+                                TextSpan(
+                                  text: 'Privacy Policy',
+                                  style: TextStyle(color: primaryColor),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () => launchUrl(
+                                          Uri.parse(
+                                              'https://www.hydromap.com'),
+                                          mode:
+                                              LaunchMode.externalApplication,
+                                        ),
+                                ),
+                                const TextSpan(text: '. v1.0.1'),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
