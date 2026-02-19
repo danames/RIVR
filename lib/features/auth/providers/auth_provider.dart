@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:rivr/features/auth/models/auth_user.dart';
 import '../../../core/services/i_auth_service.dart';
+import '../../../core/services/i_fcm_service.dart';
 import '../../../core/models/user_settings.dart';
 import 'package:rivr/core/services/i_user_settings_service.dart';
 import '../../../core/services/app_logger.dart';
@@ -83,6 +84,14 @@ class AuthProvider with ChangeNotifier {
         _currentUser!.uid,
       );
       AppLogger.info('AuthProvider', 'User settings loaded successfully');
+
+      // Set up notification listeners and refresh token if notifications are enabled
+      if (_currentUserSettings?.enableNotifications == true) {
+        AppLogger.debug('AuthProvider', 'Notifications enabled, setting up listeners');
+        final fcmService = GetIt.I<IFCMService>();
+        fcmService.setupNotificationListeners();
+        await fcmService.refreshTokenIfNeeded(_currentUser!.uid);
+      }
     } catch (e) {
       AppLogger.error('AuthProvider', 'Error loading user settings: $e', e);
       // Don't throw - user can still use the app without settings
@@ -192,10 +201,11 @@ class AuthProvider with ChangeNotifier {
     _setLoading(false);
 
     if (result.isSuccess) {
-      // Clear biometric cache and user settings
+      // Clear biometric cache, user settings, and FCM token cache
       _biometricAvailable = null;
       _biometricEnabled = null;
       _currentUserSettings = null;
+      GetIt.I<IFCMService>().clearCache();
       _setSuccess('Signed out successfully');
     } else {
       _setError(result.error ?? 'Sign out failed');

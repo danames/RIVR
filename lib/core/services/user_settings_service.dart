@@ -325,7 +325,7 @@ class UserSettingsService implements IUserSettingsService {
         lastName: lastName,
         preferredFlowUnit: FlowUnit.cfs,
         preferredTimeFormat: TimeFormat.twelveHour,
-        enableNotifications: true,
+        enableNotifications: false,
         enableDarkMode: false,
         favoriteReachIds: [],
         customBackgroundImagePaths: [], // NEW: Initialize empty list

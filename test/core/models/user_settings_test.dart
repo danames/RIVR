@@ -103,7 +103,7 @@ void main() {
         };
 
         final settings = UserSettings.fromJson(json);
-        expect(settings.enableNotifications, true);
+        expect(settings.enableNotifications, false);
         expect(settings.notificationFrequency, 1);
         expect(settings.enableDarkMode, false);
         expect(settings.favoriteReachIds, isEmpty);

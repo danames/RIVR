@@ -2,6 +2,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:get_it/get_it.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import 'package:rivr/core/services/i_user_settings_service.dart';
@@ -80,14 +81,18 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
       }
 
       if (value) {
-        // Enabling notifications - get FCM token
+        // Enabling notifications - request permission and get FCM token
         AppLogger.info('NotificationSettings', 'Enabling notifications');
-        final success = await _fcmService.enableNotifications(userId);
+        final result = await _fcmService.enableNotifications(userId);
 
-        if (!success) {
-          _showError(
-            'Failed to enable notifications. Please check your device settings.',
-          );
+        if (result == NotificationPermissionResult.permanentlyDenied ||
+            result == NotificationPermissionResult.denied) {
+          _showPermissionDeniedDialog();
+          return;
+        }
+
+        if (result != NotificationPermissionResult.granted) {
+          _showError('Failed to enable notifications. Please try again.');
           return;
         }
       } else {
@@ -107,6 +112,11 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
           _userSettings = updatedSettings;
           _notificationsEnabled = value;
         });
+
+        // Refresh AuthProvider so favorites page banner re-evaluates
+        if (mounted) {
+          context.read<AuthProvider>().refreshUserSettings();
+        }
 
         _showSuccess(
           value ? 'Notifications enabled' : 'Notifications disabled',
@@ -197,6 +207,35 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
           CupertinoDialogAction(
             child: const Text('OK'),
             onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPermissionDeniedDialog() {
+    if (!mounted) return;
+
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Notifications Blocked'),
+        content: const Text(
+          'Notification permission was previously denied. '
+          'To enable flood alerts, open Settings and allow notifications for RIVR.',
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('Open Settings'),
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
           ),
         ],
       ),

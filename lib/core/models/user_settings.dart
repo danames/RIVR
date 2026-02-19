@@ -62,7 +62,7 @@ class UserSettings {
       preferredTimeFormat: json['preferredTimeFormat'] == 'twentyFourHour'
           ? TimeFormat.twentyFourHour
           : TimeFormat.twelveHour,
-      enableNotifications: json['enableNotifications'] as bool? ?? true,
+      enableNotifications: json['enableNotifications'] as bool? ?? false,
       notificationFrequency: json['notificationFrequency'] as int? ?? 1,
       enableDarkMode: json['enableDarkMode'] as bool? ?? false,
       favoriteReachIds: List<String>.from(

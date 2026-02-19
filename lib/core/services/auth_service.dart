@@ -151,7 +151,7 @@ class AuthService implements IAuthService {
         lastName: lastName,
         preferredFlowUnit: FlowUnit.cfs,
         preferredTimeFormat: TimeFormat.twelveHour,
-        enableNotifications: true,
+        enableNotifications: false,
         enableDarkMode: false,
         favoriteReachIds: [],
         lastLoginDate: DateTime.now(),

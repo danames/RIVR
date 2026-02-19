@@ -10,8 +10,10 @@ import 'package:rivr/core/services/i_flow_unit_preference_service.dart';
 import 'package:rivr/core/services/app_logger.dart';
 import 'package:rivr/core/routing/app_router.dart';
 import 'package:rivr/features/auth/providers/auth_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rivr/features/favorites/widgets/favorite_river_card.dart';
 import 'package:rivr/features/favorites/widgets/favorites_search_bar.dart';
+import 'package:rivr/features/favorites/widgets/notification_prompt_banner.dart';
 import '../../../core/providers/favorites_provider.dart';
 import '../../../core/models/favorite_river.dart';
 import 'package:rivr/core/services/i_user_settings_service.dart';
@@ -31,6 +33,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
   bool _isRefreshing = false;
   bool _showSearch = false; // New state for search visibility
   String _selectedFlowUnit = 'CFS';
+  bool _notificationBannerDismissed = true; // Default hidden until loaded
+
+  static const _bannerDismissedKey = 'notification_banner_dismissed';
 
   @override
   void initState() {
@@ -38,8 +43,26 @@ class _FavoritesPageState extends State<FavoritesPage> {
     // Initialize favorites when page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeFavorites();
-      _loadUserFlowUnitPreference(); // ADD: Load user's current preference
+      _loadUserFlowUnitPreference();
+      _loadBannerDismissalState();
     });
+  }
+
+  Future<void> _loadBannerDismissalState() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _notificationBannerDismissed = prefs.getBool(_bannerDismissedKey) ?? false;
+      });
+    }
+  }
+
+  Future<void> _dismissNotificationBanner() async {
+    setState(() {
+      _notificationBannerDismissed = true;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_bannerDismissedKey, true);
   }
 
   Future<void> _initializeFavorites() async {
@@ -303,6 +326,22 @@ class _FavoritesPageState extends State<FavoritesPage> {
                 // Pull-to-refresh
                 CupertinoSliverRefreshControl(
                   onRefresh: () => _handleRefresh(favoritesProvider),
+                ),
+
+                // Notification prompt banner
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, _) {
+                    final notificationsEnabled =
+                        authProvider.currentUserSettings?.enableNotifications ?? false;
+                    if (!notificationsEnabled && !_notificationBannerDismissed) {
+                      return SliverToBoxAdapter(
+                        child: NotificationPromptBanner(
+                          onDismiss: _dismissNotificationBanner,
+                        ),
+                      );
+                    }
+                    return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  },
                 ),
 
                 // Error message (if any)

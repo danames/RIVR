@@ -12,7 +12,9 @@ import 'package:rivr/core/providers/theme_provider.dart';
 import 'package:rivr/core/services/theme_service.dart';
 import 'package:rivr/core/services/map_preference_service.dart';
 import 'package:rivr/core/routing/app_router.dart';
+import 'package:rivr/core/services/i_fcm_service.dart';
 import 'package:rivr/features/favorites/favorites_page.dart';
+import 'package:get_it/get_it.dart';
 import 'firebase_options.dart';
 import 'features/auth/presentation/pages/auth_coordinator.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -55,6 +57,7 @@ class RivrApp extends StatefulWidget {
 
 class _RivrAppState extends State<RivrApp> with WidgetsBindingObserver {
   late ThemeProvider _themeProvider;
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
@@ -62,6 +65,10 @@ class _RivrAppState extends State<RivrApp> with WidgetsBindingObserver {
     _themeProvider = ThemeProvider();
     WidgetsBinding.instance.addObserver(this);
     _initializeServices();
+
+    // Provide the navigator key to the FCM service so notification taps
+    // can route to the relevant forecast page.
+    GetIt.I<IFCMService>().navigatorKey = _navigatorKey;
   }
 
   @override
@@ -103,6 +110,7 @@ class _RivrAppState extends State<RivrApp> with WidgetsBindingObserver {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return CupertinoApp(
+            navigatorKey: _navigatorKey,
             title: 'RIVR',
             theme: themeProvider.themeData,
             localizationsDelegates: const [

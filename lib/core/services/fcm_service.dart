@@ -1,7 +1,9 @@
 // lib/services/fcm_service.dart
 
 import 'dart:io';
+import 'package:flutter/widgets.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:rivr/core/routing/app_routes.dart';
 import 'package:rivr/core/services/error_service.dart';
 import 'app_logger.dart';
 import 'i_user_settings_service.dart';
@@ -21,6 +23,44 @@ class FCMService implements IFCMService {
 
   bool _isInitialized = false;
   String? _cachedToken;
+  GlobalKey<NavigatorState>? _navigatorKey;
+
+  @override
+  set navigatorKey(GlobalKey<NavigatorState> key) => _navigatorKey = key;
+
+  bool _listenersRegistered = false;
+
+  /// Set up notification tap listeners and clear the iOS badge.
+  /// Safe to call multiple times — listeners are only registered once.
+  @override
+  void setupNotificationListeners() {
+    if (_listenersRegistered) return;
+    _listenersRegistered = true;
+
+    AppLogger.debug('FcmService', 'Setting up notification listeners');
+
+    // Foreground messages
+    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+
+    // Notification tap while app was in background
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+
+    // Cold-start: notification tap that launched the app
+    _messaging.getInitialMessage().then((message) {
+      if (message != null) {
+        _handleNotificationTap(message);
+      }
+    });
+
+    // Clear iOS badge on launch
+    if (Platform.isIOS) {
+      _messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    }
+  }
 
   /// Initialize FCM - call this when user enables notifications
   @override
@@ -35,17 +75,8 @@ class FCMService implements IFCMService {
         return false;
       }
 
-      // Set up foreground message handling
-      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-      // Set up notification tap handling
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
-
-      // Handle notification that opened the app (cold start)
-      final initialMessage = await _messaging.getInitialMessage();
-      if (initialMessage != null) {
-        _handleNotificationTap(initialMessage);
-      }
+      // Ensure listeners are set up
+      setupNotificationListeners();
 
       _isInitialized = true;
       AppLogger.info('FcmService', 'Successfully initialized');
@@ -168,43 +199,63 @@ class FCMService implements IFCMService {
     AppLogger.debug('FcmService', 'Title: ${message.notification?.title}');
     AppLogger.debug('FcmService', 'Body: ${message.notification?.body}');
 
-    // For now, just log. In the future, you could show an in-app notification
-    // or update the UI to reflect new flood conditions
+    // Foreground notifications are displayed by the OS on both platforms
+    // (iOS via AppDelegate willPresent, Android via FCM notification channel).
+    // No in-app action needed here — the user can tap the system notification
+    // and _handleNotificationTap will fire.
   }
 
-  /// Handle notification tap (when user taps notification)
+  /// Handle notification tap (when user taps notification from background or cold start)
   void _handleNotificationTap(RemoteMessage message) {
     AppLogger.debug('FcmService', 'Notification tapped: ${message.messageId}');
     AppLogger.debug('FcmService', 'Data: ${message.data}');
 
-    // Handle navigation based on notification data
-    final reachId = message.data['reachId'];
-    if (reachId != null) {
-      AppLogger.debug('FcmService', 'Should navigate to reach: $reachId');
-      // TODO: Add navigation logic when needed
-      // Could use a global navigator key or callback
+    final reachId = message.data['reachId'] as String?;
+    if (reachId != null && reachId.isNotEmpty) {
+      _navigateToReach(reachId);
     }
+  }
+
+  /// Navigate to the forecast page for a given reach.
+  void _navigateToReach(String reachId) {
+    final nav = _navigatorKey?.currentState;
+    if (nav == null) {
+      AppLogger.warning('FcmService', 'Navigator not available, cannot route to reach: $reachId');
+      return;
+    }
+
+    AppLogger.info('FcmService', 'Navigating to reach: $reachId');
+    nav.pushNamed(AppRoutes.forecast, arguments: reachId);
   }
 
   /// Enable notifications for a user (gets token and saves it)
   @override
-  Future<bool> enableNotifications(String userId) async {
+  Future<NotificationPermissionResult> enableNotifications(String userId) async {
     try {
       AppLogger.debug('FcmService', 'Enabling notifications for user: $userId');
 
       // Initialize if not already done
       if (!_isInitialized) {
         final initialized = await initialize();
-        if (!initialized) return false;
+        if (!initialized) {
+          // Check whether the denial is permanent
+          final status = await _messaging.getNotificationSettings();
+          if (status.authorizationStatus == AuthorizationStatus.denied) {
+            return NotificationPermissionResult.permanentlyDenied;
+          }
+          return NotificationPermissionResult.denied;
+        }
       }
 
       // Get and save token
       final token = await getAndSaveToken(userId);
-      return token != null;
+      return token != null
+          ? NotificationPermissionResult.granted
+          : NotificationPermissionResult.error;
     } catch (e) {
       AppLogger.error('FcmService', 'Error enabling notifications: $e', e);
       ErrorService.logError('FCMService.enableNotifications', e);
-      return false;
+      return NotificationPermissionResult.error;
     }
   }
 
@@ -249,17 +300,37 @@ class FCMService implements IFCMService {
   }
 
   /// Refresh token if needed (call on app startup)
+  /// Fetches a fresh FCM token, updates Firestore if it changed,
+  /// and listens for future token rotations.
   @override
   Future<void> refreshTokenIfNeeded(String userId) async {
     try {
-      // Listen for token refresh (happens when app is restored from backup, etc.)
+      AppLogger.debug('FcmService', 'Refreshing FCM token for user: $userId');
+
+      // Get the current token from Firebase
+      final freshToken = await _messaging.getToken();
+      if (freshToken == null) {
+        AppLogger.warning('FcmService', 'Could not get fresh FCM token');
+        return;
+      }
+
+      // Update Firestore if the token has changed
+      if (freshToken != _cachedToken) {
+        AppLogger.info('FcmService', 'FCM token changed, updating Firestore');
+        _cachedToken = freshToken;
+        await _saveTokenToUserSettings(userId, freshToken);
+      } else {
+        AppLogger.debug('FcmService', 'FCM token unchanged');
+      }
+
+      // Listen for future token rotations
       _messaging.onTokenRefresh.listen((newToken) async {
         AppLogger.debug('FcmService', 'Token refreshed: ${newToken.substring(0, 20)}...');
         _cachedToken = newToken;
         await _saveTokenToUserSettings(userId, newToken);
       });
     } catch (e) {
-      AppLogger.error('FcmService', 'Error setting up token refresh: $e', e);
+      AppLogger.error('FcmService', 'Error refreshing token: $e', e);
       ErrorService.logError('FCMService.refreshTokenIfNeeded', e);
     }
   }

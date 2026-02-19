@@ -34,26 +34,8 @@ import UserNotifications
       }
     })
     
-    // Configure push notifications
-    print("📱 Configuring push notifications...")
-    if #available(iOS 10.0, *) {
-      UNUserNotificationCenter.current().delegate = self
-      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-      UNUserNotificationCenter.current().requestAuthorization(
-        options: authOptions,
-        completionHandler: { granted, error in
-        print("📱 Notification permission granted: \(granted), error: \(String(describing: error))")
-        }
-      )
-    } else {
-      let settings: UIUserNotificationSettings =
-        UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
-      application.registerUserNotificationSettings(settings)
-    }
-    
-    print("📱 Registering for remote notifications...")
-    application.registerForRemoteNotifications()
-    print("📱 Registration call completed")
+    // Set notification delegate (permission deferred to Flutter side)
+    UNUserNotificationCenter.current().delegate = self
 
     
     GeneratedPluginRegistrant.register(with: self)
