@@ -291,18 +291,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
                     const SizedBox(height: 32),
 
-                    // Call to action button
-                    CupertinoButton.filled(
-                      onPressed: _navigateToMap,
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(CupertinoIcons.map, size: 18),
-                          SizedBox(width: 8),
-                          Text('Explore Rivers'),
-                        ],
-                      ),
-                    ),
+                    // Spacer to keep "How do I add favorites?" positioned
+                    const SizedBox(height: 48),
 
                     const SizedBox(height: 16),
 
