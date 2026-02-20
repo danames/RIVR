@@ -129,22 +129,27 @@ class FCMService implements IFCMService {
         return _cachedToken;
       }
 
-      // iOS: Get APNS token first (required)
+      // iOS: Wait for APNS token (required before FCM token)
       if (Platform.isIOS) {
-        AppLogger.debug('FcmService', 'Getting APNS token first (iOS requirement)');
-        try {
-          final apnsToken = await _messaging.getAPNSToken();
-          if (apnsToken != null) {
-            AppLogger.debug(
-              'FcmService',
-              'APNS token obtained: ${apnsToken.substring(0, 20)}...',
-            );
-          } else {
-            AppLogger.warning('FcmService', 'APNS token is null, continuing anyway...');
+        AppLogger.debug('FcmService', 'Waiting for APNS token (iOS requirement)');
+        String? apnsToken;
+        for (int attempt = 0; attempt < 3; attempt++) {
+          try {
+            apnsToken = await _messaging.getAPNSToken();
+          } catch (_) {
+            // Ignore errors, just retry
           }
-        } catch (e) {
-          AppLogger.error('FcmService', 'Error getting APNS token: $e', e);
-          // Continue anyway - sometimes this works without explicit APNS token
+          if (apnsToken != null) {
+            AppLogger.debug('FcmService', 'APNS token obtained on attempt ${attempt + 1}');
+            break;
+          }
+          AppLogger.debug('FcmService', 'APNS token not ready, waiting... (attempt ${attempt + 1}/3)');
+          await Future.delayed(const Duration(seconds: 2));
+        }
+        if (apnsToken == null) {
+          // APNS unavailable (e.g. iOS Simulator) — save preference without token
+          AppLogger.warning('FcmService', 'APNS token not available (simulator or provisioning issue). Saving preference without device token.');
+          return 'pending';
         }
       }
 
@@ -249,9 +254,18 @@ class FCMService implements IFCMService {
 
       // Get and save token
       final token = await getAndSaveToken(userId);
-      return token != null
-          ? NotificationPermissionResult.granted
-          : NotificationPermissionResult.error;
+      if (token == null) {
+        return NotificationPermissionResult.error;
+      }
+
+      // 'pending' means permission granted but no device token yet (simulator)
+      // Save the notification preference so it activates on a real device
+      if (token == 'pending') {
+        AppLogger.info('FcmService', 'Notifications enabled (token pending — will register on real device)');
+        await _userSettingsService.updateNotifications(userId, true);
+      }
+
+      return NotificationPermissionResult.granted;
     } catch (e) {
       AppLogger.error('FcmService', 'Error enabling notifications: $e', e);
       ErrorService.logError('FCMService.enableNotifications', e);

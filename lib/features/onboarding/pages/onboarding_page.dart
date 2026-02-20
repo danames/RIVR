@@ -35,8 +35,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
       subtitle: 'Interactive map with 2.7 million river channels',
       description:
           'Navigate an interactive map powered by the National Water Model. '
-          'Search any river in the United States and view current flow '
-          'conditions at a glance.',
+          'Search any river in the United States and view current and '
+          'future flow conditions at a glance.',
       accentColor: CupertinoColors.systemTeal,
     ),
     _PageData(
