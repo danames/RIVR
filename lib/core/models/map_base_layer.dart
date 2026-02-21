@@ -14,13 +14,14 @@ enum MapBaseLayer {
     'mapbox://styles/mapbox/satellite-streets-v12',
   ),
   outdoors('Outdoors', 'mapbox://styles/mapbox/outdoors-v12'),
-  light('Light', 'mapbox://styles/mapbox/light-v11'),
-  dark('Dark', 'mapbox://styles/mapbox/dark-v11');
+  light('Light', 'mapbox://styles/mapbox/light-v11', supports3D: false),
+  dark('Dark', 'mapbox://styles/mapbox/dark-v11', supports3D: false);
 
-  const MapBaseLayer(this.displayName, this.styleUrl);
+  const MapBaseLayer(this.displayName, this.styleUrl, {this.supports3D = true});
 
   final String displayName;
   final String styleUrl;
+  final bool supports3D;
 
   IconData get icon {
     switch (this) {

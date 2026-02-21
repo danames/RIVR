@@ -6,16 +6,18 @@ class MapControlButtons extends StatelessWidget {
   final VoidCallback onLayersPressed;
   final VoidCallback onRecenterPressed;
   final VoidCallback onStreamsPressed;
-  final VoidCallback on3DTogglePressed; // NEW: 3D toggle callback
-  final bool is3DEnabled; // NEW: 3D state
+  final VoidCallback on3DTogglePressed;
+  final bool is3DEnabled;
+  final bool is3DAvailable;
 
   const MapControlButtons({
     super.key,
     required this.onLayersPressed,
     required this.onRecenterPressed,
     required this.onStreamsPressed,
-    required this.on3DTogglePressed, // NEW: Required callback
-    required this.is3DEnabled, // NEW: Required state
+    required this.on3DTogglePressed,
+    required this.is3DEnabled,
+    this.is3DAvailable = true,
   });
 
   @override
@@ -47,8 +49,13 @@ class MapControlButtons extends StatelessWidget {
         // 3D Toggle button
         _build3DToggleButton(
           isEnabled: is3DEnabled,
+          isAvailable: is3DAvailable,
           onPressed: on3DTogglePressed,
-          tooltip: is3DEnabled ? 'Disable 3D Terrain' : 'Enable 3D Terrain',
+          tooltip: !is3DAvailable
+              ? '3D not available for this layer'
+              : is3DEnabled
+                  ? 'Disable 3D Terrain'
+                  : 'Enable 3D Terrain',
         ),
       ],
     );
@@ -81,19 +88,31 @@ class MapControlButtons extends StatelessWidget {
     );
   }
 
-  // NEW: Special 3D toggle button with different styling when active
   Widget _build3DToggleButton({
     required bool isEnabled,
+    required bool isAvailable,
     required VoidCallback onPressed,
     required String tooltip,
   }) {
+    final Color bgColor;
+    final Color iconColor;
+
+    if (!isAvailable) {
+      bgColor = CupertinoColors.white.withValues(alpha: 0.95);
+      iconColor = CupertinoColors.systemGrey3;
+    } else if (isEnabled) {
+      bgColor = CupertinoColors.systemBlue;
+      iconColor = CupertinoColors.white;
+    } else {
+      bgColor = CupertinoColors.white.withValues(alpha: 0.95);
+      iconColor = CupertinoColors.systemBlue;
+    }
+
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: isEnabled
-            ? CupertinoColors.systemBlue
-            : CupertinoColors.white.withValues(alpha: 0.95),
+        color: bgColor,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
@@ -105,10 +124,10 @@ class MapControlButtons extends StatelessWidget {
       ),
       child: CupertinoButton(
         padding: EdgeInsets.zero,
-        onPressed: onPressed,
+        onPressed: isAvailable ? onPressed : null,
         child: Icon(
           CupertinoIcons.view_3d,
-          color: isEnabled ? CupertinoColors.white : CupertinoColors.systemBlue,
+          color: iconColor,
           size: 20,
         ),
       ),

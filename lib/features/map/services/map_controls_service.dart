@@ -25,6 +25,7 @@ class MapControlsService {
   MapBaseLayer get currentLayer => _currentLayer;
   geo.Position? get lastKnownLocation => _lastKnownLocation;
   bool get is3DEnabled => _is3DEnabled;
+  bool get supports3D => _currentLayer.supports3D;
 
   void setMapboxMap(MapboxMap mapboxMap) {
     _mapboxMap = mapboxMap;
@@ -102,6 +103,12 @@ class MapControlsService {
     }
 
     try {
+      // Disable 3D if the new layer doesn't support it
+      if (_is3DEnabled && !newLayer.supports3D) {
+        _is3DEnabled = false;
+        await _save3DTerrainPreference(false);
+      }
+
       // Update the map style
       await _mapboxMap!.loadStyleURI(newLayer.styleUrl);
       _currentLayer = newLayer;
@@ -203,7 +210,13 @@ class MapControlsService {
     if (_mapboxMap == null) return;
 
     try {
-      await _mapboxMap!.style.removeStyleSource('mapbox-dem');
+      // Clear terrain property first, then remove the source
+      await _mapboxMap!.style.setStyleTerrainProperty("source", "");
+      try {
+        await _mapboxMap!.style.removeStyleSource('mapbox-dem');
+      } catch (_) {
+        // Source may not exist if terrain was never fully enabled
+      }
 
       // Reset camera to flat view
       final currentCamera = await _mapboxMap!.getCameraState();
@@ -220,6 +233,8 @@ class MapControlsService {
       _is3DEnabled = false;
       AppLogger.info('MapControlsService', '3D terrain disabled');
     } catch (e) {
+      // Ensure state is reset even if something fails
+      _is3DEnabled = false;
       AppLogger.error('MapControlsService', 'Error disabling 3D terrain', e);
     }
   }

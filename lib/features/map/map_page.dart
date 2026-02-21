@@ -169,9 +169,9 @@ class MapPageState extends State<MapPage> {
                 onLayersPressed: _showLayersModal,
                 onStreamsPressed: _showStreamsModal,
                 onRecenterPressed: _recenterToLocation,
-                // NEW: Add these two lines
                 on3DTogglePressed: _toggle3DTerrain,
                 is3DEnabled: _controlsService.is3DEnabled,
+                is3DAvailable: _controlsService.supports3D,
               ),
             ),
           ),
@@ -378,8 +378,8 @@ class MapPageState extends State<MapPage> {
       context,
       currentLayer: _controlsService.currentLayer,
       onLayerSelected: (layer) async {
-        // Simply change the base layer - vector tiles will be automatically reloaded
         await _controlsService.changeBaseLayer(layer);
+        setState(() {}); // Refresh UI to update 3D button state
         AppLogger.debug('MapPage', 'Layer changed to: ${layer.displayName}');
       },
     );
