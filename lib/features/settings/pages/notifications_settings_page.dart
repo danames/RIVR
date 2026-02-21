@@ -343,7 +343,27 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
     if (_userSettings == null) return const SizedBox.shrink();
 
     final hasToken = _userSettings!.hasValidFCMToken;
+    final isEnabled = _userSettings!.enableNotifications;
     final favoriteCount = _userSettings!.favoriteReachIds.length;
+
+    // Determine status display
+    final IconData statusIcon;
+    final Color statusColor;
+    final String statusText;
+
+    if (hasToken && isEnabled) {
+      statusIcon = CupertinoIcons.checkmark_circle_fill;
+      statusColor = CupertinoColors.systemGreen.resolveFrom(context);
+      statusText = 'Device registered for notifications';
+    } else if (isEnabled && !hasToken) {
+      statusIcon = CupertinoIcons.clock_fill;
+      statusColor = CupertinoColors.systemOrange.resolveFrom(context);
+      statusText = 'Registering device...';
+    } else {
+      statusIcon = CupertinoIcons.bell_slash_fill;
+      statusColor = CupertinoColors.systemGrey.resolveFrom(context);
+      statusText = 'Notifications disabled';
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -367,20 +387,10 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
           // Notification status
           Row(
             children: [
-              Icon(
-                hasToken
-                    ? CupertinoIcons.checkmark_circle_fill
-                    : CupertinoIcons.xmark_circle_fill,
-                color: hasToken
-                    ? CupertinoColors.systemGreen.resolveFrom(context)
-                    : CupertinoColors.systemRed.resolveFrom(context),
-                size: 16,
-              ),
+              Icon(statusIcon, color: statusColor, size: 16),
               const SizedBox(width: 8),
               Text(
-                hasToken
-                    ? 'Device registered for notifications'
-                    : 'Device not registered',
+                statusText,
                 style: TextStyle(
                   fontSize: 14,
                   color: CupertinoColors.secondaryLabel.resolveFrom(context),
