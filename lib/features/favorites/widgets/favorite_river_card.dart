@@ -48,6 +48,9 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
   String? _currentVideoPath;
+  bool _isInitializingVideo = false;
+  bool _needsVideoReinitialize = false;
+  DateTime? _lastPlayRetryTime;
 
   @override
   void initState() {
@@ -72,6 +75,7 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
       );
 
       // Properly dispose existing controller first
+      _removePlaybackListener();
       _videoController?.dispose();
       _videoController = null;
       _currentVideoPath = null;
@@ -89,6 +93,7 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
         'FavoriteRiverCard',
         'Switching from video to custom image for ${widget.favorite.reachId}',
       );
+      _removePlaybackListener();
       _videoController?.dispose();
       _videoController = null;
       setState(() {
@@ -100,38 +105,94 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
   @override
   void dispose() {
     _slideController.dispose();
+    _removePlaybackListener();
     _videoController?.dispose();
     super.dispose();
   }
 
+  void _addPlaybackListener() {
+    _videoController?.addListener(_onVideoPlaybackChanged);
+  }
+
+  void _removePlaybackListener() {
+    _videoController?.removeListener(_onVideoPlaybackChanged);
+  }
+
+  void _onVideoPlaybackChanged() {
+    if (_videoController == null || !mounted || _isInitializingVideo) return;
+    final value = _videoController!.value;
+
+    // Detect silent stop: initialized, not playing, not buffering, no error
+    if (value.isInitialized &&
+        !value.isPlaying &&
+        !value.isBuffering &&
+        !value.hasError) {
+      // 1-second cooldown prevents tight retry loops
+      final now = DateTime.now();
+      if (_lastPlayRetryTime != null &&
+          now.difference(_lastPlayRetryTime!) < const Duration(seconds: 1)) {
+        return;
+      }
+      _lastPlayRetryTime = now;
+      _videoController!.play();
+    }
+  }
+
   Future<void> _initializeVideoBackground() async {
+    if (_isInitializingVideo) {
+      _needsVideoReinitialize = true;
+      return;
+    }
+
     final category = _getFloodRiskCategory();
     final videoPath = FloodRiskVideoService.getVideoForCategory(category);
 
-    if (_currentVideoPath != videoPath) {
-      await _videoController?.dispose();
+    // Skip if correct video is already playing
+    if (_currentVideoPath == videoPath && _isVideoInitialized) return;
+
+    _isInitializingVideo = true;
+    _needsVideoReinitialize = false;
+
+    try {
+      // Clean up old controller
+      final oldController = _videoController;
+      if (oldController != null) {
+        _removePlaybackListener();
+        _videoController = null;
+        await oldController.dispose();
+      }
 
       _currentVideoPath = videoPath;
-      _videoController = VideoPlayerController.asset(videoPath);
 
-      try {
-        await _videoController!.initialize();
-        await _videoController!.setLooping(true);
-        await _videoController!.setVolume(0.0); // Mute the video
-        await _videoController!.play();
+      // Use local variable during async gap
+      final controller = VideoPlayerController.asset(videoPath);
+      await controller.initialize();
+      await controller.setLooping(true);
+      await controller.setVolume(0.0);
+      await controller.play();
 
-        if (mounted) {
-          setState(() {
-            _isVideoInitialized = true;
-          });
-        }
-      } catch (e) {
-        AppLogger.error('FavoriteRiverCard', 'Failed to initialize video', e);
-        if (mounted) {
-          setState(() {
-            _isVideoInitialized = false;
-          });
-        }
+      if (mounted) {
+        _videoController = controller;
+        _addPlaybackListener();
+        setState(() {
+          _isVideoInitialized = true;
+        });
+      } else {
+        // Widget was disposed during init — clean up the local controller
+        await controller.dispose();
+      }
+    } catch (e) {
+      AppLogger.error('FavoriteRiverCard', 'Failed to initialize video', e);
+      if (mounted) {
+        setState(() {
+          _isVideoInitialized = false;
+        });
+      }
+    } finally {
+      _isInitializingVideo = false;
+      if (_needsVideoReinitialize && mounted) {
+        _needsVideoReinitialize = false;
+        _initializeVideoBackground();
       }
     }
   }
@@ -231,22 +292,10 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
           newCategory,
         );
 
-        if (_currentVideoPath != expectedVideoPath &&
-            widget.favorite.customImageAsset == null) {
-          // Category changed, reinitialize video asynchronously
+        if (widget.favorite.customImageAsset == null &&
+            (_currentVideoPath != expectedVideoPath || !_isVideoInitialized)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _initializeVideoBackground();
-            }
-          });
-        }
-
-        // Force video initialization when no custom image is set
-        if (widget.favorite.customImageAsset == null && !_isVideoInitialized) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _initializeVideoBackground();
-            }
+            if (mounted) _initializeVideoBackground();
           });
         }
 
