@@ -6,6 +6,7 @@ Release history for RIVR. Update this file whenever you bump the version or buil
 
 | Version | Date | Commit | Summary |
 |---------|------|--------|---------|
+| 1.0.0+5 | 2026-02-22 | — | Add favorites coach marks tutorial, smooth finger-tracking slide actions, pass current flow when adding favorites from map, change flow unit labels to ft³/s and m³/s, right-align settings menu icons, fix GlobalKey crash after coach marks navigation, fix video backgrounds randomly stopping |
 | 1.0.0+4 | 2026-02-21 | — | Keep Standard basemap always light, fix stream colors |
 | 1.0.0+3 | 2026-02-21 | 117eb48 | Add missing NSLocationAlwaysAndWhenInUseUsageDescription |
 | 1.0.0+2 | 2026-02-21 | eb567ed | TestFlight internal testing build |
