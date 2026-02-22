@@ -41,6 +41,8 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
   bool _isSliding = false;
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
+  double _dragStartX = 0.0;
+  bool _wasOpenBeforeDrag = false;
 
   // Video background state
   VideoPlayerController? _videoController;
@@ -51,7 +53,7 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
   void initState() {
     super.initState();
     _slideController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 200),
       vsync: this,
     );
     _initializeVideoBackground();
@@ -214,7 +216,7 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
     // Set up slide animation with calculated offset
     _slideAnimation =
         Tween<Offset>(begin: Offset.zero, end: Offset(slideOffset, 0)).animate(
-          CurvedAnimation(parent: _slideController, curve: Curves.easeInOut),
+          _slideController,
         );
 
     return Consumer<FavoritesProvider>(
@@ -597,28 +599,36 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
 
   // Gesture handling for slide actions
   void _handlePanStart(DragStartDetails details) {
+    _dragStartX = details.globalPosition.dx;
+    _wasOpenBeforeDrag = _isSliding;
     setState(() {
       _isPressed = true;
     });
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
-    // Only respond to horizontal gestures to avoid interfering with vertical reorder drags
     final horizontalDelta = details.delta.dx.abs();
     final verticalDelta = details.delta.dy.abs();
 
-    // Only trigger slide actions if the gesture is primarily horizontal
     if (horizontalDelta > verticalDelta) {
-      if (details.delta.dx < -5 && !_isSliding) {
-        // More sensitive swipe detection - swiping left shows actions
+      final dragDistance = _dragStartX - details.globalPosition.dx;
+
+      double newValue;
+      if (_wasOpenBeforeDrag) {
+        // Dragging right from open state closes proportionally
+        newValue = 1.0 - (-dragDistance / SlideActionConstants.totalActionWidth);
+      } else {
+        newValue = dragDistance / SlideActionConstants.totalActionWidth;
+      }
+      newValue = newValue.clamp(0.0, 1.0);
+
+      if (!_isSliding && newValue > 0.0) {
         setState(() {
           _isSliding = true;
         });
-        _slideController.forward();
-      } else if (details.delta.dx > 5 && _isSliding) {
-        // Swiping right hides actions
-        _closeSlide();
       }
+
+      _slideController.value = newValue;
     }
   }
 
@@ -626,6 +636,32 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
     setState(() {
       _isPressed = false;
     });
+
+    if (!_isSliding) return;
+
+    final velocity = details.velocity.pixelsPerSecond.dx;
+
+    if (velocity.abs() > 300) {
+      // Fast swipe: animate in the direction of velocity
+      if (velocity < 0) {
+        // Swiping left — open
+        _slideController.animateTo(1.0, curve: Curves.easeOut);
+      } else {
+        // Swiping right — close
+        _slideController.animateTo(0.0, curve: Curves.easeOut).then((_) {
+          if (mounted) setState(() => _isSliding = false);
+        });
+      }
+    } else {
+      // Slow drag: settle based on position
+      if (_slideController.value > 0.3) {
+        _slideController.animateTo(1.0, curve: Curves.easeOut);
+      } else {
+        _slideController.animateTo(0.0, curve: Curves.easeOut).then((_) {
+          if (mounted) setState(() => _isSliding = false);
+        });
+      }
+    }
   }
 
   void _handleLongPress() {
