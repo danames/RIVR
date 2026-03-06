@@ -101,16 +101,14 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
         await _fcmService.disableNotifications(userId);
       }
 
-      // Update user settings
-      final updatedSettings = await _userSettingsService.updateNotifications(
-        userId,
-        value,
-      );
+      // Refresh local state from Firestore (enable/disable already wrote the flag)
+      final refreshedSettings =
+          await _userSettingsService.getUserSettings(userId);
 
-      if (updatedSettings != null && mounted) {
+      if (refreshedSettings != null && mounted) {
         setState(() {
-          _userSettings = updatedSettings;
-          _notificationsEnabled = value;
+          _userSettings = refreshedSettings;
+          _notificationsEnabled = refreshedSettings.enableNotifications;
         });
 
         // Refresh AuthProvider so favorites page banner re-evaluates
@@ -236,7 +234,10 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
                   // Section 1 — Flood alerts toggle
                   _buildToggleSection(),
 
-                  // Section 2 — Frequency picker (only when enabled)
+                  // Section 2 — Device registration status (only when enabled)
+                  if (_notificationsEnabled) _buildRegistrationStatusSection(),
+
+                  // Section 3 — Frequency picker (only when enabled)
                   if (_notificationsEnabled)
                     NotificationFrequencyPicker(
                       selectedFrequency: _notificationFrequency,
@@ -244,11 +245,64 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
                       isEnabled: !_isUpdating,
                     ),
 
-                  // Section 3 — Monitoring (only when enabled)
+                  // Section 4 — Monitoring (only when enabled)
                   if (_notificationsEnabled) _buildMonitoringSection(),
                 ],
               ),
       ),
+    );
+  }
+
+  Widget _buildRegistrationStatusSection() {
+    final token = _userSettings?.fcmToken;
+    final hasToken = token != null && token.isNotEmpty;
+    final isPending = token == 'pending';
+
+    final Color iconColor;
+    final IconData icon;
+    final String title;
+    final String? subtitle;
+    final String? footer;
+
+    if (hasToken && !isPending) {
+      iconColor = CupertinoColors.systemGreen;
+      icon = CupertinoIcons.shield_fill;
+      title = 'Device registered';
+      subtitle = '...${token.substring(token.length - 8)}';
+      footer = null;
+    } else if (isPending) {
+      iconColor = CupertinoColors.systemOrange;
+      icon = CupertinoIcons.clock_fill;
+      title = 'Registration pending';
+      subtitle = 'Will activate on a real device';
+      footer = null;
+    } else {
+      iconColor = CupertinoColors.systemRed;
+      icon = CupertinoIcons.exclamationmark_triangle_fill;
+      title = 'Device not registered';
+      subtitle = null;
+      footer = 'Try toggling notifications off and on again. '
+          'If the issue persists, restart the app.';
+    }
+
+    return CupertinoListSection.insetGrouped(
+      header: const Text('DEVICE STATUS'),
+      footer: footer != null ? Text(footer) : null,
+      children: [
+        CupertinoListTile(
+          leading: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: iconColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: CupertinoColors.white, size: 18),
+          ),
+          title: Text(title),
+          subtitle: subtitle != null ? Text(subtitle) : null,
+        ),
+      ],
     );
   }
 

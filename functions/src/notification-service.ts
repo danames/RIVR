@@ -118,16 +118,35 @@ async function getNotificationUsers(
       .where("notificationFrequency", ">=", minFrequency)
       .get();
 
+    logger.info(
+      `📊 User query: ${usersSnapshot.size} docs matched` +
+      ` (slot ${timeSlot}, minFrequency ${minFrequency})` +
+      ", filtering for valid FCM + favorites..."
+    );
+
     const users: UserSettings[] = [];
+    let skippedNoToken = 0;
+    let skippedNoFavorites = 0;
 
     for (const doc of usersSnapshot.docs) {
       const data = doc.data();
 
       // Only include users with valid FCM tokens and favorite rivers
-      if (data.fcmToken &&
-          data.favoriteReachIds &&
-          Array.isArray(data.favoriteReachIds) &&
-          data.favoriteReachIds.length > 0) {
+      if (!data.fcmToken) {
+        skippedNoToken++;
+        logger.info(`👤 Skipped user ${doc.id}: missing FCM token`, {
+          userId: doc.id,
+          firstName: data.firstName || "unknown",
+        });
+      } else if (!data.favoriteReachIds ||
+          !Array.isArray(data.favoriteReachIds) ||
+          data.favoriteReachIds.length === 0) {
+        skippedNoFavorites++;
+        logger.info(`👤 Skipped user ${doc.id}: no favorite rivers`, {
+          userId: doc.id,
+          firstName: data.firstName || "unknown",
+        });
+      } else {
         users.push({
           userId: doc.id,
           enableNotifications: data.enableNotifications,
@@ -140,6 +159,14 @@ async function getNotificationUsers(
         });
       }
     }
+
+    logger.info("📊 User filter results", {
+      totalMatched: usersSnapshot.size,
+      eligible: users.length,
+      skippedNoToken,
+      skippedNoFavorites,
+      userNames: users.map((u) => u.firstName),
+    });
 
     return users;
   } catch (error) {
@@ -243,6 +270,18 @@ async function shouldSendAlert(
     // Extract thresholds and convert forecast for comparison
     const thresholds = extractReturnPeriodThresholds(returnPeriodData);
     const forecastCms = maxForecastFlow * 0.0283168;
+
+    if (Object.keys(thresholds).length === 0) {
+      logger.warn(
+        `⚠️ No return period thresholds available for reach ${reachId}` +
+        " — cannot evaluate flood level, skipping alert", {
+          reachId,
+          riverName,
+          maxForecastFlow_CFS: maxForecastFlow,
+          returnPeriodDataLength: returnPeriodData.length,
+        });
+      return null;
+    }
 
     // Log the forecast and threshold comparison values
     logger.info(`🔍 Forecast vs Return Periods comparison for ${riverName}`, {

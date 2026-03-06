@@ -1,13 +1,21 @@
 // functions/src/noaa-client.ts
 
+import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+
+// Initialize Firebase Admin if not already done
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+const db = admin.firestore();
 
 // NOAA API configuration (matches your exact AppConfig)
 const NOAA_CONFIG = {
   // Base URLs matching your AppConfig exactly
   noaaReachesBaseUrl: "https://api.water.noaa.gov/nwps/v1",
   nwmReturnPeriodUrl: "https://nwm-api.ciroh.org//return-period",
-  nwmApiKey: "***REMOVED***",
+  nwmApiKey: "AIzaSyA53mQaOFY3AckBrH8LwjBFnPNmNaDiYZw",
 
   // Request configuration
   timeout: 30000, // 30 second timeout
@@ -192,7 +200,6 @@ export async function getReturnPeriods(
     if (!response.ok) {
       if (response.status === 404) {
         logger.warn(`⚠️ No return periods found for reach ${reachId}`);
-        // Return empty array for missing data (graceful degradation)
         return [];
       }
       throw new Error(
@@ -225,14 +232,54 @@ export async function getReturnPeriods(
       }
     );
 
+    // Cache successful result in Firestore
+    try {
+      await db.collection("return_period_cache").doc(reachId).set({
+        data: validData,
+        cachedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (cacheError) {
+      logger.warn(`⚠️ Failed to cache return periods for ${reachId}`, {
+        error: cacheError instanceof Error ?
+          cacheError.message : String(cacheError),
+      });
+    }
+
     return validData;
   } catch (error) {
     logger.error(`❌ Error fetching return periods for reach ${reachId}`, {
       error: error instanceof Error ? error.message : String(error),
     });
 
-    // Don't throw for return periods - they're supplementary data
-    // Return empty array so notification checking can continue
+    // Fallback: try reading from Firestore cache
+    try {
+      const cached = await db
+        .collection("return_period_cache")
+        .doc(reachId)
+        .get();
+
+      if (cached.exists) {
+        const cachedData = cached.data();
+        if (cachedData?.data && Array.isArray(cachedData.data)) {
+          logger.warn(
+            `📦 Using cached return periods for reach ${reachId}` +
+            ` (cached at ${cachedData.cachedAt?.toDate?.() || "unknown"})`
+          );
+          return cachedData.data as ReturnPeriodData[];
+        }
+      }
+    } catch (cacheError) {
+      logger.error(`❌ Cache fallback also failed for reach ${reachId}`, {
+        error: cacheError instanceof Error ?
+          cacheError.message : String(cacheError),
+      });
+    }
+
+    // No cache available either — return empty array
+    logger.warn(
+      `⚠️ No return period data available for reach ${reachId}` +
+      " (API failed, no cache)"
+    );
     return [];
   }
 }

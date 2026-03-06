@@ -1,6 +1,7 @@
 // lib/services/fcm_service.dart
 
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:rivr/core/routing/app_routes.dart';
@@ -117,51 +118,58 @@ class FCMService implements IFCMService {
     }
   }
 
+  /// Retrieve the FCM token without saving it.
+  /// Returns the token string, 'pending' for iOS simulator, or null on failure.
+  Future<String?> _getToken() async {
+    // Return cached token if available
+    if (_cachedToken != null) {
+      AppLogger.debug('FcmService', 'Using cached token');
+      return _cachedToken;
+    }
+
+    // iOS: Wait for APNS token (required before FCM token)
+    if (Platform.isIOS) {
+      AppLogger.debug('FcmService', 'Waiting for APNS token (iOS requirement)');
+      String? apnsToken;
+      for (int attempt = 0; attempt < 3; attempt++) {
+        try {
+          apnsToken = await _messaging.getAPNSToken();
+        } catch (_) {
+          // Ignore errors, just retry
+        }
+        if (apnsToken != null) {
+          AppLogger.debug('FcmService', 'APNS token obtained on attempt ${attempt + 1}');
+          break;
+        }
+        AppLogger.debug('FcmService', 'APNS token not ready, waiting... (attempt ${attempt + 1}/3)');
+        await Future.delayed(const Duration(seconds: 2));
+      }
+      if (apnsToken == null) {
+        AppLogger.warning('FcmService', 'APNS token not available (simulator or provisioning issue)');
+        return 'pending';
+      }
+    }
+
+    // Get fresh FCM token
+    final token = await _messaging.getToken();
+    if (token == null) {
+      AppLogger.warning('FcmService', 'Failed to get FCM token');
+      return null;
+    }
+
+    AppLogger.debug('FcmService', 'Got FCM token: ${token.substring(0, 20)}...');
+    _cachedToken = token;
+    return token;
+  }
+
   /// Get FCM token and save to user settings
   @override
   Future<String?> getAndSaveToken(String userId) async {
     try {
       AppLogger.debug('FcmService', 'Getting FCM token for user: $userId');
 
-      // Return cached token if available
-      if (_cachedToken != null) {
-        AppLogger.debug('FcmService', 'Using cached token');
-        return _cachedToken;
-      }
-
-      // iOS: Wait for APNS token (required before FCM token)
-      if (Platform.isIOS) {
-        AppLogger.debug('FcmService', 'Waiting for APNS token (iOS requirement)');
-        String? apnsToken;
-        for (int attempt = 0; attempt < 3; attempt++) {
-          try {
-            apnsToken = await _messaging.getAPNSToken();
-          } catch (_) {
-            // Ignore errors, just retry
-          }
-          if (apnsToken != null) {
-            AppLogger.debug('FcmService', 'APNS token obtained on attempt ${attempt + 1}');
-            break;
-          }
-          AppLogger.debug('FcmService', 'APNS token not ready, waiting... (attempt ${attempt + 1}/3)');
-          await Future.delayed(const Duration(seconds: 2));
-        }
-        if (apnsToken == null) {
-          // APNS unavailable (e.g. iOS Simulator) — save preference without token
-          AppLogger.warning('FcmService', 'APNS token not available (simulator or provisioning issue). Saving preference without device token.');
-          return 'pending';
-        }
-      }
-
-      // Get fresh FCM token
-      final token = await _messaging.getToken();
-      if (token == null) {
-        AppLogger.warning('FcmService', 'Failed to get FCM token');
-        return null;
-      }
-
-      AppLogger.debug('FcmService', 'Got FCM token: ${token.substring(0, 20)}...');
-      _cachedToken = token;
+      final token = await _getToken();
+      if (token == null || token == 'pending') return token;
 
       // Save token to user settings
       await _saveTokenToUserSettings(userId, token);
@@ -174,23 +182,12 @@ class FCMService implements IFCMService {
     }
   }
 
-  /// Save FCM token to UserSettings
+  /// Save FCM token to UserSettings via partial Firestore update
   Future<void> _saveTokenToUserSettings(String userId, String token) async {
     try {
-      AppLogger.debug('FcmService', 'Saving token to user settings');
-
-      final currentSettings = await _userSettingsService.getUserSettings(
-        userId,
-      );
-      if (currentSettings == null) {
-        AppLogger.warning('FcmService', 'No user settings found, cannot save token');
-        return;
-      }
-
-      // Update settings with new FCM token
-      final updatedSettings = currentSettings.copyWith(fcmToken: token);
-      await _userSettingsService.saveUserSettings(updatedSettings);
-
+      await _userSettingsService.updateUserSettings(userId, {
+        'fcmToken': token,
+      });
       AppLogger.info('FcmService', 'Token saved to user settings');
     } catch (e) {
       AppLogger.error('FcmService', 'Error saving token to settings: $e', e);
@@ -233,7 +230,7 @@ class FCMService implements IFCMService {
     nav.pushNamed(AppRoutes.forecast, arguments: reachId);
   }
 
-  /// Enable notifications for a user (gets token and saves it)
+  /// Enable notifications for a user (gets token and saves it atomically with the flag)
   @override
   Future<NotificationPermissionResult> enableNotifications(String userId) async {
     try {
@@ -252,17 +249,25 @@ class FCMService implements IFCMService {
         }
       }
 
-      // Get and save token
-      final token = await getAndSaveToken(userId);
+      // Get the token (without saving yet)
+      final token = await _getToken();
       if (token == null) {
         return NotificationPermissionResult.error;
       }
 
-      // 'pending' means permission granted but no device token yet (simulator)
-      // Save the notification preference so it activates on a real device
+      // Write token + flag atomically in one partial update
       if (token == 'pending') {
+        // iOS simulator: no device token, just save the preference
         AppLogger.info('FcmService', 'Notifications enabled (token pending — will register on real device)');
-        await _userSettingsService.updateNotifications(userId, true);
+        await _userSettingsService.updateUserSettings(userId, {
+          'enableNotifications': true,
+        });
+      } else {
+        // Normal path: save token + flag together
+        await _userSettingsService.updateUserSettings(userId, {
+          'fcmToken': token,
+          'enableNotifications': true,
+        });
       }
 
       return NotificationPermissionResult.granted;
@@ -282,17 +287,14 @@ class FCMService implements IFCMService {
       // Clear cached token
       _cachedToken = null;
 
-      // Remove token from user settings
-      final currentSettings = await _userSettingsService.getUserSettings(
-        userId,
-      );
-      if (currentSettings != null) {
-        final updatedSettings = currentSettings.copyWith(fcmToken: null);
-        await _userSettingsService.saveUserSettings(updatedSettings);
-        AppLogger.info('FcmService', 'Token removed from user settings');
-      }
+      // Remove token and disable flag atomically via partial update
+      await _userSettingsService.updateUserSettings(userId, {
+        'fcmToken': FieldValue.delete(),
+        'enableNotifications': false,
+      });
+      AppLogger.info('FcmService', 'Token removed and notifications disabled');
 
-      // Delete token from Firebase (optional - prevents old tokens from being used)
+      // Delete token from Firebase (prevents old tokens from being used)
       await _messaging.deleteToken();
       AppLogger.info('FcmService', 'Token deleted from Firebase');
     } catch (e) {

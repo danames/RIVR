@@ -118,24 +118,6 @@
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="high_importance_channel"/>
 
-        <!-- ========== Local Notifications Support ========== -->
-        <!-- Scheduled notification receiver -->
-        <receiver 
-            android:exported="false" 
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
-        
-        <!-- Boot receiver for scheduled notifications -->
-        <receiver 
-            android:exported="false" 
-            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </receiver>
-
         <!-- Flutter plugins registrant -->
         <meta-data
             android:name="flutterEmbedding"
