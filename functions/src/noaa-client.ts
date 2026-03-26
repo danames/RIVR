@@ -15,7 +15,7 @@ const NOAA_CONFIG = {
   // Base URLs matching your AppConfig exactly
   noaaReachesBaseUrl: "https://api.water.noaa.gov/nwps/v1",
   nwmReturnPeriodUrl: "https://nwm-api.ciroh.org//return-period",
-  nwmApiKey: "AIzaSyA53mQaOFY3AckBrH8LwjBFnPNmNaDiYZw",
+  nwmApiKey: process.env.NWM_API_KEY || "",
 
   // Request configuration
   timeout: 30000, // 30 second timeout
