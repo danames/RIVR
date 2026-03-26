@@ -95,6 +95,9 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
           _showError('Failed to enable notifications. Please try again.');
           return;
         }
+
+        // Ensure tap-to-navigate listeners are active immediately
+        _fcmService.setupNotificationListeners();
       } else {
         // Disabling notifications - clear FCM token
         AppLogger.info('NotificationSettings', 'Disabling notifications');

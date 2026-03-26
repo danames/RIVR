@@ -261,12 +261,14 @@ class FCMService implements IFCMService {
         AppLogger.info('FcmService', 'Notifications enabled (token pending — will register on real device)');
         await _userSettingsService.updateUserSettings(userId, {
           'enableNotifications': true,
+          'notificationFrequency': 1,
         });
       } else {
-        // Normal path: save token + flag together
+        // Normal path: save token + flag + frequency together
         await _userSettingsService.updateUserSettings(userId, {
           'fcmToken': token,
           'enableNotifications': true,
+          'notificationFrequency': 1,
         });
       }
 

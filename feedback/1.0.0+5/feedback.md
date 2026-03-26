@@ -13,7 +13,7 @@
 - [ ] **"Share My Location" button does nothing** — Tapping the button produces no visible response or action. *(Xueyi Li)*
 - [ ] **Verification email links arrive expired** — Every "Resend Verification Email" results in an already-invalid/expired link by the time it is opened. *(Henok Teklu)*
 - [ ] **Verification emails land in Spam** — Verification emails are consistently filtered to Spam folders. *(Henok Teklu)*
-- [ ] **Intro tutorial tooltip renders off-screen** — One of the onboarding tutorial messages displays above the screen bounds, cut off and unreadable. It should be repositioned below the widget it points to so it stays within the screen bounding box. *(Xueyi Li / internal team)*
+- [x] **Intro tutorial tooltip renders off-screen** — One of the onboarding tutorial messages displays above the screen bounds, cut off and unreadable. It should be repositioned below the widget it points to so it stays within the screen bounding box. *(Xueyi Li / internal team)* -- Fixed: changed Pull to Refresh tooltip from ContentAlign.top to ContentAlign.bottom.
 - [ ] **Error banners persist across route changes** — Error messages (e.g., "Invalid sign-in credentials") remain visible after navigating from Login to Create Account. Banners should clear on route change. *(Henok Teklu)*
 - [ ] **Premature "Signed in successfully" banner** — After tapping "Create Account", the app shows a success banner even though the user is still blocked by the email verification screen and not actually signed in yet. *(Henok Teklu)*
 
@@ -32,7 +32,7 @@
 
 ## Design Decisions
 
-- [ ] **Discontinue Dark Mode** — Dark mode does not render well in several views. To reduce complexity in future releases, dark mode/theme support will be removed entirely. *(Internal team decision)*
+- [x] **Discontinue Dark Mode** — Dark mode does not render well in several views. To reduce complexity in future releases, dark mode/theme support will be removed entirely. *(Internal team decision)* -- Completed: removed ThemeProvider, ThemeService, theme settings page, all brightness conditionals. App locked to light theme.
 
 ---
 

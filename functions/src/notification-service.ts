@@ -43,11 +43,22 @@ interface AlertData {
   riverName: string;
 }
 
+/** Pre-fetched data for a single reach, shared across all users. */
+interface ReachData {
+  forecast: {
+    shortRange: ForecastData | null;
+    mediumRange: ForecastData | null;
+  } | null;
+  returnPeriods: unknown[];
+  riverName: string;
+}
+
 // Scale factor for testing (set to 1 for production, increase for demos)
 const SCALE_FACTOR = 1;
 
 /**
- * Check alerts for a specific time slot
+ * Check alerts for a specific time slot.
+ * Batch-fetches reach data once per unique reach, then evaluates per user.
  * @param {number} timeSlot - Time slot number (1-4)
  * @return {Promise<AlertCheckResult>} Summary of alert check results
  */
@@ -66,17 +77,39 @@ export async function checkAlertsForTimeSlot(
   };
 
   try {
-    // Get users for this time slot
+    // Step 1: Get eligible users for this time slot
     const users = await getNotificationUsers(timeSlot);
     logger.info(
-      `📱 Found ${users.length} users for slot ${timeSlot}`
+      `📱 Found ${users.length} eligible users for slot ${timeSlot}`
     );
 
-    // Check each user's favorite rivers
+    if (users.length === 0) {
+      logger.info(`🎯 Slot ${timeSlot}: no eligible users, done.`);
+      return result;
+    }
+
+    // Step 2: Collect all unique reach IDs across all users
+    const uniqueReachIds = new Set<string>();
+    for (const user of users) {
+      for (const reachId of user.favoriteReachIds) {
+        uniqueReachIds.add(reachId);
+      }
+    }
+    logger.info(
+      `🏞️ ${uniqueReachIds.size} unique reaches to check ` +
+      `across ${users.length} users`
+    );
+
+    // Step 3: Batch-fetch data for all unique reaches
+    const reachDataMap = await batchFetchReachData(
+      Array.from(uniqueReachIds)
+    );
+
+    // Step 4: Evaluate alerts per user using pre-fetched data
     for (const user of users) {
       try {
         result.usersChecked++;
-        const userAlerts = await checkUserRivers(user);
+        const userAlerts = await checkUserRivers(user, reachDataMap);
         result.alertsSent += userAlerts;
       } catch (error) {
         result.errors++;
@@ -86,7 +119,19 @@ export async function checkAlertsForTimeSlot(
       }
     }
 
-    logger.info(`🎯 Slot ${timeSlot} check summary`, result);
+    // Step 5: Summary logging
+    const reachesWithData = Array.from(reachDataMap.values())
+      .filter((r) => r.forecast !== null).length;
+    const reachesWithThresholds = Array.from(reachDataMap.values())
+      .filter((r) => r.returnPeriods.length > 0).length;
+
+    logger.info(`🎯 Slot ${timeSlot} check complete`, {
+      ...result,
+      uniqueReaches: uniqueReachIds.size,
+      reachesWithForecast: reachesWithData,
+      reachesWithReturnPeriods: reachesWithThresholds,
+    });
+
     return result;
   } catch (error) {
     logger.error(`💥 Fatal error in slot ${timeSlot} check`, {
@@ -94,6 +139,75 @@ export async function checkAlertsForTimeSlot(
     });
     throw error;
   }
+}
+
+/**
+ * Batch-fetch forecast, return period, and river name data for a list of
+ * reach IDs. Each reach is fetched exactly once using Promise.allSettled
+ * so one failure doesn't block others.
+ */
+async function batchFetchReachData(
+  reachIds: string[]
+): Promise<Map<string, ReachData>> {
+  const {getForecast, getReturnPeriods, getRiverName} =
+    await import("./noaa-client.js");
+
+  const reachDataMap = new Map<string, ReachData>();
+
+  // Process reaches in parallel batches of 10 to avoid overwhelming APIs
+  const BATCH_SIZE = 10;
+  for (let i = 0; i < reachIds.length; i += BATCH_SIZE) {
+    const batch = reachIds.slice(i, i + BATCH_SIZE);
+
+    const batchResults = await Promise.allSettled(
+      batch.map(async (reachId) => {
+        // Fetch all three data sources in parallel using Promise.allSettled
+        // so a river name failure doesn't discard forecast data
+        const [forecastResult, returnPeriodsResult, riverNameResult] =
+          await Promise.allSettled([
+            getForecast(reachId),
+            getReturnPeriods(reachId),
+            getRiverName(reachId),
+          ]);
+
+        const forecast = forecastResult.status === "fulfilled"
+          ? forecastResult.value
+          : null;
+        const returnPeriods = returnPeriodsResult.status === "fulfilled"
+          ? returnPeriodsResult.value
+          : [];
+        const riverName = riverNameResult.status === "fulfilled"
+          ? riverNameResult.value
+          : `Reach ${reachId}`;
+
+        if (forecastResult.status === "rejected") {
+          logger.warn(`⚠️ Forecast fetch failed for reach ${reachId}`, {
+            error: forecastResult.reason instanceof Error
+              ? forecastResult.reason.message
+              : String(forecastResult.reason),
+          });
+        }
+
+        return {reachId, forecast, returnPeriods, riverName};
+      })
+    );
+
+    // Store results in the map
+    for (const result of batchResults) {
+      if (result.status === "fulfilled") {
+        const {reachId, forecast, returnPeriods, riverName} = result.value;
+        reachDataMap.set(reachId, {forecast, returnPeriods, riverName});
+      } else {
+        logger.error("❌ Unexpected batch fetch error", {
+          error: result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason),
+        });
+      }
+    }
+  }
+
+  return reachDataMap;
 }
 
 /**
@@ -196,29 +310,33 @@ function getMinFrequencyForSlot(timeSlot: number): number {
 }
 
 /**
- * Check all favorite rivers for a specific user
+ * Check all favorite rivers for a specific user using pre-fetched reach data
  * @param {UserSettings} user - User settings and preferences
+ * @param {Map<string, ReachData>} reachDataMap - Pre-fetched reach data
  * @return {Promise<number>} Number of alerts sent for this user
  */
-async function checkUserRivers(user: UserSettings): Promise<number> {
-  logger.info(`🏞️ Checking rivers for user ${user.firstName}`, {
-    userId: user.userId,
-    favoriteCount: user.favoriteReachIds.length,
-    flowUnit: user.preferredFlowUnit,
-    frequency: user.notificationFrequency,
-  });
-
+async function checkUserRivers(
+  user: UserSettings,
+  reachDataMap: Map<string, ReachData>
+): Promise<number> {
   let alertsSent = 0;
 
   for (const reachId of user.favoriteReachIds) {
     try {
-      const shouldAlert = await shouldSendAlert(
+      const reachData = reachDataMap.get(reachId);
+      if (!reachData) {
+        logger.warn(`⚠️ No pre-fetched data for reach ${reachId}`);
+        continue;
+      }
+
+      const alertData = evaluateAlert(
         reachId,
+        reachData,
         user.preferredFlowUnit
       );
 
-      if (shouldAlert) {
-        const success = await sendAlert(user, reachId, shouldAlert);
+      if (alertData) {
+        const success = await sendAlert(user, reachId, alertData);
         if (success) {
           alertsSent++;
         }
@@ -237,54 +355,42 @@ async function checkUserRivers(user: UserSettings): Promise<number> {
 }
 
 /**
- * Check if we should send an alert for a specific river
- * Returns alert details if threshold exceeded, null otherwise
- * @param {string} reachId - The reach identifier
- * @param {string} userFlowUnit - User's preferred flow unit (cfs or cms)
- * @return {Promise<AlertData|null>} Alert data if threshold exceeded
+ * Evaluate whether a reach's forecast exceeds return period thresholds.
+ * Pure function — no API calls, uses pre-fetched data.
  */
-async function shouldSendAlert(
+function evaluateAlert(
   reachId: string,
+  reachData: ReachData,
   userFlowUnit: "cfs" | "cms"
-): Promise<null | AlertData> {
-  try {
-    // Import NOAA client
-    const {getForecast, getReturnPeriods, getRiverName} =
-      await import("./noaa-client.js");
+): AlertData | null {
+  if (!reachData.forecast) {
+    logger.warn(`⚠️ No forecast data for reach ${reachId}`);
+    return null;
+  }
 
-    // Get forecast and return period data in parallel
-    const [forecastData, returnPeriodData, riverName] = await Promise.all([
-      getForecast(reachId),
-      getReturnPeriods(reachId),
-      getRiverName(reachId),
-    ]);
+  const maxForecastFlow = getMaxForecastFlow(reachData.forecast);
+  if (maxForecastFlow === null) {
+    logger.warn(`⚠️ No valid forecast values for reach ${reachId}`);
+    return null;
+  }
 
-    // Extract max flow from BOTH short and medium
-    const maxForecastFlow = getMaxForecastFlow(forecastData);
+  const thresholds = extractReturnPeriodThresholds(reachData.returnPeriods);
+  const forecastCms = maxForecastFlow * 0.0283168;
 
-    if (maxForecastFlow === null) {
-      logger.warn(`⚠️ No valid forecast data for reach ${reachId}`);
-      return null;
-    }
+  if (Object.keys(thresholds).length === 0) {
+    logger.warn(
+      `⚠️ No return period thresholds for reach ${reachId}` +
+      " — cannot evaluate flood level", {
+        reachId,
+        riverName: reachData.riverName,
+        maxForecastFlow_CFS: maxForecastFlow,
+      });
+    return null;
+  }
 
-    // Extract thresholds and convert forecast for comparison
-    const thresholds = extractReturnPeriodThresholds(returnPeriodData);
-    const forecastCms = maxForecastFlow * 0.0283168;
-
-    if (Object.keys(thresholds).length === 0) {
-      logger.warn(
-        `⚠️ No return period thresholds available for reach ${reachId}` +
-        " — cannot evaluate flood level, skipping alert", {
-          reachId,
-          riverName,
-          maxForecastFlow_CFS: maxForecastFlow,
-          returnPeriodDataLength: returnPeriodData.length,
-        });
-      return null;
-    }
-
-    // Log the forecast and threshold comparison values
-    logger.info(`🔍 Forecast vs Return Periods comparison for ${riverName}`, {
+  // Log the comparison
+  logger.info(
+    `🔍 Forecast vs thresholds for ${reachData.riverName}`, {
       reachId,
       maxForecastFlow_CFS: Math.round(maxForecastFlow * 100) / 100,
       maxForecastFlow_CMS: Math.round(forecastCms * 100) / 100,
@@ -292,59 +398,44 @@ async function shouldSendAlert(
         ([period, threshold]) => ({
           period,
           threshold_CMS: Math.round(threshold * 100) / 100,
-          scaledThreshold_CMS: Math.round(
-            (threshold / SCALE_FACTOR) * 100) / 100,
-          exceedsThreshold: forecastCms > (threshold / SCALE_FACTOR),
+          exceeds: forecastCms > (threshold / SCALE_FACTOR),
         })),
-      scaleFactor: SCALE_FACTOR,
     });
 
-    // Check against each return period threshold - find HIGHEST exceeded
-    let highestExceededAlert: AlertData | null = null;
+  // Find HIGHEST exceeded threshold
+  let highestExceededAlert: AlertData | null = null;
 
-    for (const [returnPeriod, thresholdCms] of Object.entries(thresholds)) {
-      // Apply scale factor for testing
-      const scaledThreshold = thresholdCms / SCALE_FACTOR;
+  for (const [returnPeriod, thresholdCms] of Object.entries(thresholds)) {
+    const scaledThreshold = thresholdCms / SCALE_FACTOR;
 
-      if (forecastCms > scaledThreshold) {
-        // Convert values to user's preferred unit for notification display
-        const displayForecast = userFlowUnit === "cfs" ?
-          maxForecastFlow :
-          forecastCms;
+    if (forecastCms > scaledThreshold) {
+      const displayForecast = userFlowUnit === "cfs" ?
+        maxForecastFlow :
+        forecastCms;
 
-        const displayThreshold = userFlowUnit === "cfs" ?
-          scaledThreshold / 0.0283168 :
-          scaledThreshold;
+      const displayThreshold = userFlowUnit === "cfs" ?
+        scaledThreshold / 0.0283168 :
+        scaledThreshold;
 
-        highestExceededAlert = {
-          forecastFlow: Math.round(displayForecast),
-          threshold: Math.round(displayThreshold),
-          returnPeriod,
-          riverName,
-        };
-        // Continue checking to find highest threshold
-      }
+      highestExceededAlert = {
+        forecastFlow: Math.round(displayForecast),
+        threshold: Math.round(displayThreshold),
+        returnPeriod,
+        riverName: reachData.riverName,
+      };
     }
-
-    if (highestExceededAlert) {
-      logger.info(`🚨 Alert condition met for reach ${reachId}`, {
-        riverName: highestExceededAlert.riverName,
-        forecastFlow: highestExceededAlert.forecastFlow,
-        threshold: highestExceededAlert.threshold,
-        returnPeriod: highestExceededAlert.returnPeriod,
-        unit: userFlowUnit.toUpperCase(),
-        scaleFactor: SCALE_FACTOR,
-      });
-    }
-
-    return highestExceededAlert;
-  } catch (error) {
-    logger.error(
-      `❌ Error checking alert condition for reach ${reachId}`,
-      {error}
-    );
-    return null;
   }
+
+  if (highestExceededAlert) {
+    logger.info(`🚨 Alert condition met for reach ${reachId}`, {
+      riverName: highestExceededAlert.riverName,
+      returnPeriod: highestExceededAlert.returnPeriod,
+      forecastFlow: highestExceededAlert.forecastFlow,
+      unit: userFlowUnit.toUpperCase(),
+    });
+  }
+
+  return highestExceededAlert;
 }
 
 /**
@@ -454,7 +545,7 @@ async function checkRecentAlert(
 
 /**
  * Extract max flow value from forecast data
- * @param {ForecastData} forecastData - Forecast data from NOAA API
+ * @param {object} forecastData - Forecast data from NOAA API
  * @return {number|null} Maximum flow value or null if no valid data
  */
 function getMaxForecastFlow(forecastData: {

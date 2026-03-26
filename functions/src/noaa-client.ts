@@ -107,7 +107,7 @@ export async function getForecast(reachId: string): Promise<{
   // Fetch short_range forecast
   try {
     const shortRangeUrl = buildForecastUrl(reachId, "short_range");
-    const shortRangeResponse = await fetchWithTimeout(shortRangeUrl);
+    const shortRangeResponse = await fetchWithRetry(shortRangeUrl);
 
     if (shortRangeResponse.ok) {
       const shortRangeData = await shortRangeResponse.json();
@@ -134,7 +134,7 @@ export async function getForecast(reachId: string): Promise<{
   // Fetch medium_range forecast
   try {
     const mediumRangeUrl = buildForecastUrl(reachId, "medium_range");
-    const mediumRangeResponse = await fetchWithTimeout(mediumRangeUrl);
+    const mediumRangeResponse = await fetchWithRetry(mediumRangeUrl);
 
     if (mediumRangeResponse.ok) {
       const mediumRangeData = await mediumRangeResponse.json();
@@ -178,8 +178,18 @@ export async function getForecast(reachId: string): Promise<{
   }
 }
 
+// Cache TTL: return periods are static statistical data, so a long TTL is safe
+const RETURN_PERIOD_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
 /**
- * Get return period thresholds for a reach (always fetches fresh data)
+ * Get return period thresholds for a reach (cache-first strategy).
+ *
+ * Return periods are statistical flood thresholds that rarely change.
+ * Strategy:
+ *   1. Check Firestore cache — if fresh (<30 days), return immediately
+ *   2. If stale or missing, fetch from API with retry
+ *   3. On API success, update cache
+ *   4. On API failure, use stale cache (any age) as fallback
  *
  * IMPORTANT: Return period values are ALWAYS in CMS (m³/s) from NWM API
  * Forecast values from getForecast() are ALWAYS in CFS (ft³/s)
@@ -191,15 +201,60 @@ export async function getForecast(reachId: string): Promise<{
 export async function getReturnPeriods(
   reachId: string
 ): Promise<ReturnPeriodData[]> {
+  // Step 1: Check Firestore cache first
+  let cachedData: ReturnPeriodData[] | null = null;
+  let cacheIsFresh = false;
+
   try {
-    logger.info(`📡 Fetching fresh return periods for reach ${reachId}`);
+    const cached = await db
+      .collection("return_period_cache")
+      .doc(reachId)
+      .get();
+
+    if (cached.exists) {
+      const doc = cached.data();
+      if (doc?.data && Array.isArray(doc.data) && doc.data.length > 0) {
+        cachedData = doc.data as ReturnPeriodData[];
+
+        // Check cache freshness
+        const cachedAt = doc.cachedAt?.toDate?.();
+        if (cachedAt) {
+          const ageMs = Date.now() - cachedAt.getTime();
+          cacheIsFresh = ageMs < RETURN_PERIOD_CACHE_TTL_MS;
+        }
+
+        if (cacheIsFresh) {
+          logger.info(
+            `📦 Using cached return periods for reach ${reachId} (fresh)`
+          );
+          return cachedData;
+        }
+      }
+    }
+  } catch (cacheReadError) {
+    logger.warn(`⚠️ Cache read failed for reach ${reachId}`, {
+      error: cacheReadError instanceof Error ?
+        cacheReadError.message : String(cacheReadError),
+    });
+  }
+
+  // Step 2: Cache missing or stale — fetch from API with retry
+  try {
+    logger.info(`📡 Fetching return periods from API for reach ${reachId}`);
 
     const url = buildReturnPeriodUrl(reachId);
-    const response = await fetchWithTimeout(url);
+    const response = await fetchWithRetry(url);
 
     if (!response.ok) {
       if (response.status === 404) {
-        logger.warn(`⚠️ No return periods found for reach ${reachId}`);
+        logger.warn(`⚠️ No return periods found for reach ${reachId} (404)`);
+        // Cache the 404 so we don't re-fetch a non-existent reach
+        try {
+          await db.collection("return_period_cache").doc(reachId).set({
+            data: [],
+            cachedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (_) { /* ignore cache write failure */ }
         return [];
       }
       throw new Error(
@@ -208,11 +263,8 @@ export async function getReturnPeriods(
     }
 
     const data = await response.json();
-
-    // Ensure data is in array format (following your existing pattern)
     const returnPeriodData = Array.isArray(data) ? data : [data];
 
-    // Validate the data structure
     const validData = returnPeriodData.filter(
       (item: unknown): item is ReturnPeriodData =>
         isReturnPeriodItem(item)
@@ -220,11 +272,12 @@ export async function getReturnPeriods(
 
     if (validData.length === 0) {
       logger.warn(`⚠️ No valid return period data for reach ${reachId}`);
-      return [];
+      // Return stale cache if available, otherwise empty
+      return cachedData ?? [];
     }
 
     logger.info(
-      `✅ Successfully fetched return periods for reach ${reachId}`,
+      `✅ Fetched return periods for reach ${reachId}`,
       {
         periods: Object.keys(validData[0]).filter((k) =>
           k.startsWith("return_period_")
@@ -232,53 +285,35 @@ export async function getReturnPeriods(
       }
     );
 
-    // Cache successful result in Firestore
+    // Update cache
     try {
       await db.collection("return_period_cache").doc(reachId).set({
         data: validData,
         cachedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-    } catch (cacheError) {
+    } catch (cacheWriteError) {
       logger.warn(`⚠️ Failed to cache return periods for ${reachId}`, {
-        error: cacheError instanceof Error ?
-          cacheError.message : String(cacheError),
+        error: cacheWriteError instanceof Error ?
+          cacheWriteError.message : String(cacheWriteError),
       });
     }
 
     return validData;
   } catch (error) {
-    logger.error(`❌ Error fetching return periods for reach ${reachId}`, {
+    logger.error(`❌ API fetch failed for return periods, reach ${reachId}`, {
       error: error instanceof Error ? error.message : String(error),
     });
 
-    // Fallback: try reading from Firestore cache
-    try {
-      const cached = await db
-        .collection("return_period_cache")
-        .doc(reachId)
-        .get();
-
-      if (cached.exists) {
-        const cachedData = cached.data();
-        if (cachedData?.data && Array.isArray(cachedData.data)) {
-          logger.warn(
-            `📦 Using cached return periods for reach ${reachId}` +
-            ` (cached at ${cachedData.cachedAt?.toDate?.() || "unknown"})`
-          );
-          return cachedData.data as ReturnPeriodData[];
-        }
-      }
-    } catch (cacheError) {
-      logger.error(`❌ Cache fallback also failed for reach ${reachId}`, {
-        error: cacheError instanceof Error ?
-          cacheError.message : String(cacheError),
-      });
+    // Step 3: API failed — use stale cache (any age) as fallback
+    if (cachedData) {
+      logger.warn(
+        `📦 Using stale cached return periods for reach ${reachId}`
+      );
+      return cachedData;
     }
 
-    // No cache available either — return empty array
     logger.warn(
-      `⚠️ No return period data available for reach ${reachId}` +
-      " (API failed, no cache)"
+      `⚠️ No return period data for reach ${reachId} (API failed, no cache)`
     );
     return [];
   }
@@ -294,7 +329,7 @@ export async function getRiverName(reachId: string): Promise<string> {
     logger.info(`📡 Fetching fresh river name for reach ${reachId}`);
 
     const url = buildReachUrl(reachId);
-    const response = await fetchWithTimeout(url);
+    const response = await fetchWithRetry(url);
 
     if (!response.ok) {
       throw new Error(
@@ -353,7 +388,7 @@ function buildReachUrl(reachId: string): string {
 }
 
 /**
- * Fetch with timeout (following your existing patterns)
+ * Fetch with timeout
  * @param {string} url - The URL to fetch
  * @return {Promise<Response>} Fetch response
  */
@@ -378,6 +413,56 @@ async function fetchWithTimeout(url: string): Promise<Response> {
 
     throw error;
   }
+}
+
+/**
+ * Fetch with retry and exponential backoff.
+ * Retries on network errors and 5xx responses. Does NOT retry 4xx.
+ * @param {string} url - The URL to fetch
+ * @param {number} maxAttempts - Max number of attempts (default 3)
+ * @return {Promise<Response>} Fetch response
+ */
+async function fetchWithRetry(
+  url: string,
+  maxAttempts = 3
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetchWithTimeout(url);
+
+      // Don't retry 4xx (client errors) — only retry 5xx (server errors)
+      if (response.status >= 500 && attempt < maxAttempts) {
+        logger.warn(
+          `⚠️ Server error ${response.status}, retrying ` +
+          `(attempt ${attempt}/${maxAttempts})`,
+          {url: url.substring(0, 80)}
+        );
+        await sleep(1000 * Math.pow(2, attempt - 1)); // 1s, 2s, 4s
+        continue;
+      }
+
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (attempt < maxAttempts) {
+        logger.warn(
+          `⚠️ Network error, retrying (attempt ${attempt}/${maxAttempts}): ` +
+          lastError.message,
+          {url: url.substring(0, 80)}
+        );
+        await sleep(1000 * Math.pow(2, attempt - 1));
+      }
+    }
+  }
+
+  throw lastError || new Error(`Failed after ${maxAttempts} attempts`);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
