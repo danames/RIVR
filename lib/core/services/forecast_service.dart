@@ -376,16 +376,12 @@ class ForecastService implements IForecastService {
         AppLogger.info('ForecastService', '$forecastType forecast loaded with cached reach data');
         return specificResponse;
       } else {
-        // Cache miss - get both reach info and forecast
-        final futures = await Future.wait([
-          _apiService.fetchReachInfo(reachId),
-          _apiService.fetchForecast(reachId, forecastType),
-        ]);
+        // Cache miss - fetch forecast first, then get reach info separately
+        // to avoid Future.wait failing entirely if either request fails
+        final forecastData = await _apiService.fetchForecast(reachId, forecastType);
 
-        final reachInfo = futures[0];
-        final forecastData = futures[1];
-
-        // Create reach data and cache it
+        // Get reach info (should exist from Phase 1, but fetch if needed)
+        final reachInfo = await _apiService.fetchReachInfo(reachId);
         reach = ReachData.fromNoaaApi(reachInfo);
         await _cacheService.store(reach);
 

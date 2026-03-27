@@ -1,5 +1,6 @@
 // lib/core/services/noaa_api_service.dart
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config.dart';
@@ -24,7 +25,7 @@ class NoaaApiService implements INoaaApiService {
 
   // Different timeout durations for different request priorities
   static const Duration _quickTimeout = Duration(
-    seconds: 10,
+    seconds: 15,
   ); // For overview data
   static const Duration _normalTimeout = Duration(
     seconds: 20,
@@ -55,6 +56,45 @@ class NoaaApiService implements INoaaApiService {
         .timeout(timeout);
   }
 
+  /// HTTP GET with automatic retry on timeout or server errors.
+  Future<http.Response> _httpGetWithRetry(
+    String url, {
+    required Duration timeout,
+    Map<String, String>? extraHeaders,
+    int maxRetries = 2,
+  }) async {
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        final response = await _httpGetWithRetry(
+          url,
+          timeout: timeout,
+          extraHeaders: extraHeaders,
+        );
+        if (response.statusCode >= 500 && attempt < maxRetries) {
+          AppLogger.warning(
+            'NoaaApi',
+            'Server error ${response.statusCode} on attempt ${attempt + 1}, retrying: $url',
+          );
+          await Future.delayed(Duration(seconds: attempt + 1));
+          continue;
+        }
+        return response;
+      } on TimeoutException {
+        if (attempt < maxRetries) {
+          AppLogger.warning(
+            'NoaaApi',
+            'Timeout on attempt ${attempt + 1}, retrying: $url',
+          );
+          await Future.delayed(Duration(seconds: attempt + 1));
+          continue;
+        }
+        rethrow;
+      }
+    }
+    // Final fallback (unreachable in practice)
+    return _httpGet(url, timeout: timeout, extraHeaders: extraHeaders);
+  }
+
   // Reach Info Fetching (OPTIMIZED for overview)
   /// Fetch reach information from NOAA Reaches API
   /// Returns data in format expected by ReachData.fromNoaaApi()
@@ -75,7 +115,7 @@ class NoaaApiService implements INoaaApiService {
 
       final timeout = isOverview ? _quickTimeout : _normalTimeout;
 
-      final response = await _httpGet(
+      final response = await _httpGetWithRetry(
         url,
         timeout: timeout,
         extraHeaders: {if (isOverview) 'X-Request-Priority': 'high'},
@@ -127,7 +167,7 @@ class NoaaApiService implements INoaaApiService {
       final url = AppConfig.getReturnPeriodUrl(reachId);
       AppLogger.debug('NoaaApi', 'Return period URL: $url');
 
-      final response = await _httpGet(
+      final response = await _httpGetWithRetry(
         url,
         timeout: _normalTimeout,
       );
@@ -219,7 +259,7 @@ class NoaaApiService implements INoaaApiService {
       // Use appropriate timeout based on priority
       final timeout = isOverview ? _quickTimeout : _normalTimeout;
 
-      final response = await _httpGet(
+      final response = await _httpGetWithRetry(
         url,
         timeout: timeout,
         extraHeaders: {if (isOverview) 'X-Request-Priority': 'high'},
@@ -308,7 +348,7 @@ class NoaaApiService implements INoaaApiService {
     final futures = forecastTypes.map((forecastType) async {
       try {
         AppLogger.debug('NoaaApi', 'Attempting to fetch $forecastType...');
-        final response = await _httpGet(
+        final response = await _httpGetWithRetry(
           AppConfig.getForecastUrl(reachId, forecastType),
           timeout: _longTimeout,
         );
