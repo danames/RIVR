@@ -257,12 +257,12 @@ class _FavoritesPageState extends State<FavoritesPage> {
           // App title header
           _buildAppHeader(),
 
-          // Empty state content
+          // Empty state content — offset upward to balance whitespace
           Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
+            child: Padding(
+              padding: const EdgeInsets.only(
+                  left: 32, right: 32, bottom: 100),
+              child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Empty state illustration
@@ -296,42 +296,18 @@ class _FavoritesPageState extends State<FavoritesPage> {
                     const SizedBox(height: 12),
 
                     // Description
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          const TextSpan(text: 'Tap the '),
-                          WidgetSpan(
-                            alignment: PlaceholderAlignment.middle,
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: CupertinoColors.systemBlue,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                CupertinoIcons.add,
-                                color: CupertinoColors.white,
-                                size: 14,
-                              ),
-                            ),
-                          ),
-                          const TextSpan(
-                              text:
-                                  ' button below to explore the map and add your first river.'),
-                        ],
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: CupertinoColors.systemGrey2
-                            ..resolveFrom(context),
-                          height: 1.4,
-                        ),
+                    Text(
+                      'Tap the + button below to explore the map and add your first river.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: CupertinoColors.systemGrey2
+                          ..resolveFrom(context),
+                        height: 1.4,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ],
                 ),
-              ),
             ),
           ),
         ],
