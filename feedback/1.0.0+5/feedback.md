@@ -27,7 +27,7 @@
 
 ## Feature Requests
 
-- [ ] **Add to favorites from Flow Forecast Overview Page** — Users should be able to favorite a river directly from the forecast detail view, not only from the map. *(Internal team)*
+- [x] **Add to favorites from Flow Forecast Overview Page** — Users should be able to favorite a river directly from the forecast detail view, not only from the map. *(Internal team)* -- Fixed: added heart icon button next to river name in station header. Shows outline/filled state via FavoritesProvider, uses optimized addFavoriteWithKnownCoordinates.
 - [ ] **Option to restore default water video on favorite cards** — Users who customize their favorite card background should be able to revert to the original water animation. *(Bryce Imel)*
 
 ## Design Decisions

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:rivr/core/models/reach_data.dart';
 import 'package:rivr/core/services/app_logger.dart';
 import 'package:rivr/core/routing/app_router.dart';
+import '../../../core/providers/favorites_provider.dart';
 import '../../../core/providers/reach_data_provider.dart';
 import '../widgets/current_flow_status_card.dart';
 import '../widgets/forecast_category_grid.dart';
@@ -21,6 +22,7 @@ class ReachOverviewPage extends StatefulWidget {
 class _ReachOverviewPageState extends State<ReachOverviewPage> {
   bool _isInitialized = false;
   bool _loadingTimedOut = false;
+  bool _isTogglingFavorite = false;
   String? _currentLoadingReachId; // Track which reach we're loading
 
   @override
@@ -288,14 +290,23 @@ class _ReachOverviewPageState extends State<ReachOverviewPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Main title - Shows immediately
-          Text(
-            reach.displayName,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: CupertinoColors.label.resolveFrom(context),
-            ),
+          // Main title row with favorite button
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  reach.displayName,
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: CupertinoColors.label.resolveFrom(context),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _buildFavoriteButton(reach),
+            ],
           ),
 
           const SizedBox(height: 8),
@@ -307,6 +318,88 @@ class _ReachOverviewPageState extends State<ReachOverviewPage> {
               fontSize: 16,
               color: CupertinoColors.secondaryLabel.resolveFrom(context),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFavoriteButton(ReachData reach) {
+    return Consumer<FavoritesProvider>(
+      builder: (context, favoritesProvider, child) {
+        final isFavorited = favoritesProvider.isFavorite(reach.reachId);
+
+        return GestureDetector(
+          onTap: _isTogglingFavorite
+              ? null
+              : () => _toggleFavorite(favoritesProvider, reach),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: _isTogglingFavorite
+                ? const CupertinoActivityIndicator(radius: 12)
+                : Icon(
+                    isFavorited
+                        ? CupertinoIcons.heart_fill
+                        : CupertinoIcons.heart,
+                    size: 28,
+                    color: isFavorited
+                        ? CupertinoColors.systemRed
+                        : CupertinoColors.systemGrey.resolveFrom(context),
+                  ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _toggleFavorite(
+    FavoritesProvider favoritesProvider,
+    ReachData reach,
+  ) async {
+    if (!mounted) return;
+    setState(() => _isTogglingFavorite = true);
+
+    try {
+      final isFavorited = favoritesProvider.isFavorite(reach.reachId);
+      bool success;
+
+      if (isFavorited) {
+        success = await favoritesProvider.removeFavorite(reach.reachId);
+      } else {
+        final reachProvider = Provider.of<ReachDataProvider>(
+          context,
+          listen: false,
+        );
+        success = await favoritesProvider.addFavoriteWithKnownCoordinates(
+          reach.reachId,
+          latitude: reach.latitude,
+          longitude: reach.longitude,
+          riverName: reach.displayName,
+          currentFlow: reachProvider.getCurrentFlow(),
+        );
+      }
+
+      if (!success && mounted) {
+        _showFavoriteError();
+      }
+    } catch (e) {
+      AppLogger.error('ReachOverviewPage', 'Error toggling favorite', e);
+      if (mounted) _showFavoriteError();
+    }
+
+    if (!mounted) return;
+    setState(() => _isTogglingFavorite = false);
+  }
+
+  void _showFavoriteError() {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        content: const Text('Failed to update favorites'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
           ),
         ],
       ),

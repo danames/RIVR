@@ -2,6 +2,10 @@
 //
 // Integration tests for the favorites page (app home screen):
 // empty state, populated list, card tap, search, rename, settings menu.
+//
+// NOTE: FavoriteRiverCard uses a looping video player, so pumpAndSettle()
+// will never return for tests that render cards. Use pump() with explicit
+// durations instead.
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +17,20 @@ import 'package:rivr/features/auth/providers/auth_provider.dart';
 import 'package:rivr/core/providers/favorites_provider.dart';
 
 import 'helpers/test_app.dart';
+
+/// Pump enough frames for the favorites page to load and render cards.
+/// Uses pump() instead of pumpAndSettle() because FavoriteRiverCard
+/// has a looping video animation that prevents settling.
+Future<void> pumpFavoritesReady(WidgetTester tester) async {
+  // Cannot use pumpAndSettle() because FavoriteRiverCard has a looping video.
+  // The favorites page calls initializeAndRefresh() in a post-frame callback
+  // which loads from multiple async sources. Use pump() with a generous
+  // duration to let all microtasks and futures resolve, then pump a few more
+  // frames for widget rebuilds.
+  await tester.pump(const Duration(seconds: 2));
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pump(const Duration(milliseconds: 500));
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -51,36 +69,12 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Empty state text
+      // Empty state text with inline CTA
       expect(find.text('No Favorite Rivers Yet'), findsOneWidget);
-      expect(find.text('How do I add favorites?'), findsOneWidget);
-    });
-
-    testWidgets('help dialog shows on tap', (tester) async {
-      favoritesProvider = createFavoritesProvider(services);
-
-      await tester.pumpWidget(buildTestApp(
-        home: const FavoritesPage(),
-        services: services,
-        authProvider: authProvider,
-        favoritesProvider: favoritesProvider,
-      ));
-      await tester.pumpAndSettle();
-
-      // Tap help link
-      await tester.tap(find.text('How do I add favorites?'));
-      await tester.pumpAndSettle();
-
-      // Help dialog visible
-      expect(find.text('Adding Favorites'), findsOneWidget);
-      expect(find.text('Got it'), findsOneWidget);
-      expect(find.text('Explore Now'), findsOneWidget);
-
-      // Dismiss
-      await tester.tap(find.text('Got it'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Adding Favorites'), findsNothing);
+      expect(
+        find.textContaining('Tap the + button below'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('FAB is visible on empty state', (tester) async {
@@ -124,7 +118,7 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // Cards are visible
       expect(find.byType(FavoriteRiverCard), findsNWidgets(2));
@@ -147,7 +141,7 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // App header visible
       expect(find.text(' RIVR'), findsOneWidget);
@@ -170,7 +164,7 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // Search icon should not be visible with < 4 favorites
       expect(find.byIcon(CupertinoIcons.search), findsNothing);
@@ -195,7 +189,7 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // Search icon is present
       expect(find.byIcon(CupertinoIcons.search), findsOneWidget);
@@ -215,11 +209,11 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // Tap settings (ellipsis) button
       await tester.tap(find.byIcon(CupertinoIcons.ellipsis));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Menu options visible
       expect(find.text('Notifications'), findsOneWidget);
@@ -247,15 +241,15 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // Open settings menu
       await tester.tap(find.byIcon(CupertinoIcons.ellipsis));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Tap sign out - this closes the menu and triggers _handleSignOut
       await tester.tap(find.text('Sign Out'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Confirmation dialog should appear
       expect(
@@ -266,7 +260,7 @@ void main() {
 
       // Cancel dismisses the dialog
       await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Favorites page should still be showing
       expect(find.byType(FavoritesPage), findsOneWidget);
@@ -290,7 +284,7 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // We can't easily swipe to reveal slide actions in integration tests,
       // but we can verify the card is rendered with the custom name
