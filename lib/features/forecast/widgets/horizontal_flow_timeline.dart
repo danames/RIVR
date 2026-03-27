@@ -7,24 +7,17 @@ import '../../../core/models/hourly_flow_data.dart';
 import '../../../core/providers/reach_data_provider.dart';
 import 'package:get_it/get_it.dart';
 import '../../../core/services/i_flow_unit_preference_service.dart';
-import 'dart:math' as math;
-
-enum FlowTimelineViewMode { hourCards, flowWave }
 
 class HorizontalFlowTimeline extends StatefulWidget {
   final String reachId;
   final double height;
   final EdgeInsets? padding;
-  final FlowTimelineViewMode initialViewMode;
-  final VoidCallback? onViewModeChanged;
 
   const HorizontalFlowTimeline({
     super.key,
     required this.reachId,
     this.height = 140,
     this.padding,
-    this.initialViewMode = FlowTimelineViewMode.hourCards,
-    this.onViewModeChanged,
   });
 
   @override
@@ -32,14 +25,12 @@ class HorizontalFlowTimeline extends StatefulWidget {
 }
 
 class _HorizontalFlowTimelineState extends State<HorizontalFlowTimeline> {
-  late FlowTimelineViewMode _viewMode;
   ScrollController? _scrollController;
   String _lastKnownUnit = 'ft³/s';
 
   @override
   void initState() {
     super.initState();
-    _viewMode = widget.initialViewMode;
     _scrollController = ScrollController();
     _lastKnownUnit = _getCurrentFlowUnit();
   }
@@ -92,73 +83,9 @@ class _HorizontalFlowTimelineState extends State<HorizontalFlowTimeline> {
           return _buildNoDataState();
         }
 
-        return Column(
-          children: [
-            _buildViewModeToggle(),
-            const SizedBox(height: 12),
-            _buildTimelineContent(context, shortRangeData, reachProvider),
-          ],
-        );
+        return _buildHourCards(context, shortRangeData, reachProvider);
       },
     );
-  }
-
-  Widget _buildViewModeToggle() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        CupertinoSlidingSegmentedControl<FlowTimelineViewMode>(
-          children: const {
-            FlowTimelineViewMode.hourCards: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(CupertinoIcons.square_grid_2x2, size: 14),
-                  SizedBox(width: 4),
-                  Text('Cards', style: TextStyle(fontSize: 12)),
-                ],
-              ),
-            ),
-            FlowTimelineViewMode.flowWave: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(CupertinoIcons.waveform, size: 14),
-                  SizedBox(width: 4),
-                  Text('Wave', style: TextStyle(fontSize: 12)),
-                ],
-              ),
-            ),
-          },
-          groupValue: _viewMode,
-          onValueChanged: (FlowTimelineViewMode? value) {
-            if (value != null) {
-              setState(() {
-                _viewMode = value;
-              });
-              widget.onViewModeChanged?.call();
-            }
-          },
-          backgroundColor: CupertinoColors.systemGrey5.resolveFrom(context),
-          thumbColor: CupertinoColors.systemBackground.resolveFrom(context),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimelineContent(
-    BuildContext context,
-    List<HourlyFlowDataPoint> data,
-    ReachDataProvider reachProvider,
-  ) {
-    switch (_viewMode) {
-      case FlowTimelineViewMode.hourCards:
-        return _buildHourCards(context, data, reachProvider);
-      case FlowTimelineViewMode.flowWave:
-        return _buildFlowWave(context, data, reachProvider);
-    }
   }
 
   Widget _buildHourCards(
@@ -320,26 +247,6 @@ class _HorizontalFlowTimelineState extends State<HorizontalFlowTimeline> {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildFlowWave(
-    BuildContext context,
-    List<HourlyFlowDataPoint> data,
-    ReachDataProvider reachProvider,
-  ) {
-    // FIXED: Data is already converted by API service, use as-is
-    return Container(
-      height: widget.height,
-      padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 16),
-      child: CustomPaint(
-        painter: FlowWavePainter(
-          data: data, // Use data as-is (already converted by API service)
-          reachProvider: reachProvider,
-          context: context,
-        ),
-        child: Container(),
       ),
     );
   }
@@ -581,110 +488,5 @@ class _HorizontalFlowTimelineState extends State<HorizontalFlowTimeline> {
       ),
     );
   }
-}
-
-// FIXED: Custom painter for flow wave visualization (receives already converted data)
-class FlowWavePainter extends CustomPainter {
-  final List<HourlyFlowDataPoint> data;
-  final ReachDataProvider reachProvider;
-  final BuildContext context;
-
-  FlowWavePainter({
-    required this.data,
-    required this.reachProvider,
-    required this.context,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (data.isEmpty) return;
-
-    final paint = Paint()
-      ..color = CupertinoColors.systemBlue.resolveFrom(context)
-      ..strokeWidth = 3.0
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final fillPaint = Paint()
-      ..color = CupertinoColors.systemBlue.resolveFrom(context).withValues(alpha: 0.1)
-      ..style = PaintingStyle.fill;
-
-    // FIXED: Calculate scaling - data is already in correct units from API service
-    final minFlow = data.map((d) => d.flow).reduce(math.min);
-    final maxFlow = data.map((d) => d.flow).reduce(math.max);
-    final flowRange = maxFlow - minFlow;
-
-    // Create path for wave
-    final path = Path();
-    final fillPath = Path();
-
-    for (int i = 0; i < data.length; i++) {
-      final x = (i / (data.length - 1)) * size.width;
-      final normalizedFlow = flowRange > 0
-          ? (data[i].flow - minFlow) / flowRange
-          : 0.5;
-      final y =
-          size.height -
-          (normalizedFlow * size.height * 0.8) -
-          (size.height * 0.1);
-
-      if (i == 0) {
-        path.moveTo(x, y);
-        fillPath.moveTo(x, size.height);
-        fillPath.lineTo(x, y);
-      } else {
-        path.lineTo(x, y);
-        fillPath.lineTo(x, y);
-      }
-    }
-
-    // Complete fill path
-    fillPath.lineTo(size.width, size.height);
-    fillPath.close();
-
-    // Draw fill and line
-    canvas.drawPath(fillPath, fillPaint);
-    canvas.drawPath(path, paint);
-
-    // Draw data points
-    final pointPaint = Paint()
-      ..color = CupertinoColors.systemBlue.resolveFrom(context)
-      ..style = PaintingStyle.fill;
-
-    for (int i = 0; i < data.length; i++) {
-      final x = (i / (data.length - 1)) * size.width;
-      final normalizedFlow = flowRange > 0
-          ? (data[i].flow - minFlow) / flowRange
-          : 0.5;
-      final y =
-          size.height -
-          (normalizedFlow * size.height * 0.8) -
-          (size.height * 0.1);
-
-      canvas.drawCircle(Offset(x, y), 4, pointPaint);
-
-      // Draw current hour indicator
-      if (i < data.length) {
-        final now = DateTime.now();
-        final currentHour = DateTime(now.year, now.month, now.day, now.hour);
-        final dataHour = DateTime(
-          data[i].validTime.year,
-          data[i].validTime.month,
-          data[i].validTime.day,
-          data[i].validTime.hour,
-        );
-
-        if (dataHour == currentHour) {
-          final currentPaint = Paint()
-            ..color = CupertinoColors.systemRed.resolveFrom(context)
-            ..style = PaintingStyle.fill;
-          canvas.drawCircle(Offset(x, y), 6, currentPaint);
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 

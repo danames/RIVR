@@ -16,7 +16,7 @@ import 'flow_values_usage_guide.dart';
 /// while allowing each forecast type to use specialized widgets for optimal data display.
 ///
 /// Specialized Timeline Widgets (to be developed):
-/// - Short Range: HorizontalFlowTimeline - Hour cards + flow wave modes for 18 hours
+/// - Short Range: HorizontalFlowTimeline - Hour cards for 18 hours
 /// - Medium Range: DailyFlowForecastWidgetWithHourly - Expandable daily rows for 10 days
 /// - Long Range: LongRangeCalendar - Calendar grid with day cells for 30 days
 
@@ -255,7 +255,7 @@ class _ForecastDetailTemplateState extends State<ForecastDetailTemplate> {
 
         // Timeline Section (customizable or hideable)
         // This section will use specialized widgets for each forecast type:
-        // - Short Range: HorizontalFlowTimeline (hour cards + flow wave modes)
+        // - Short Range: HorizontalFlowTimeline (hour cards)
         // - Medium Range: DailyFlowForecastWidgetWithHourly (expandable daily rows)
         // - Long Range: LongRangeCalendar (calendar grid with day cells)
         if (widget.showTimelineSection)
