@@ -20,19 +20,19 @@ import 'package:rivr/core/providers/favorites_provider.dart';
 import 'helpers/test_app.dart';
 import 'helpers/mock_services.dart';
 
-/// Pump enough frames for the favorites page to load and render cards.
-/// Uses pump() instead of pumpAndSettle() because FavoriteRiverCard
-/// has a looping video animation that prevents settling.
+/// Pump frames for the favorites page to render cards.
+///
+/// Cannot use pumpAndSettle() because VideoPlayerController starts a 500ms
+/// periodic timer to poll position when play() is called. This timer never
+/// stops, so pumpAndSettle() spins until its 10-minute timeout.
+///
+/// With FakeVideoPlayerPlatform registered and FavoritesProvider
+/// pre-initialized, the widget tree builds quickly — we just need enough
+/// pump cycles for post-frame callbacks and async rebuilds.
 Future<void> pumpFavoritesReady(WidgetTester tester) async {
-  // Cannot use pumpAndSettle() because FavoriteRiverCard has a looping video.
-  // The favorites page calls initializeAndRefresh() in a post-frame callback
-  // which chains multiple async operations. Each pump() resolves pending
-  // microtasks + timers up to the given duration.
-  // Pump many short frames to let each async step complete and trigger the next.
-  for (var i = 0; i < 30; i++) {
+  for (var i = 0; i < 10; i++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
-  // Final pump to settle widget rebuilds after all provider data loaded
   await tester.pump();
 }
 
@@ -124,7 +124,7 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // Cards are visible
       expect(find.byType(FavoriteRiverCard), findsNWidgets(2));
@@ -148,7 +148,7 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // App header visible
       expect(find.text(' RIVR'), findsOneWidget);
@@ -172,7 +172,7 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // Search icon should not be visible with < 4 favorites
       expect(find.byIcon(CupertinoIcons.search), findsNothing);
@@ -198,7 +198,7 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // Search icon is present
       expect(find.byIcon(CupertinoIcons.search), findsOneWidget);
@@ -219,11 +219,11 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // Tap settings (ellipsis) button
       await tester.tap(find.byIcon(CupertinoIcons.ellipsis));
-      await tester.pump(const Duration(milliseconds: 500));
+      await pumpFavoritesReady(tester);
 
       // Menu options visible
       expect(find.text('Notifications'), findsOneWidget);
@@ -238,9 +238,7 @@ void main() {
       expect(find.text('Test User'), findsOneWidget);
     });
 
-    // TODO: Fix sign out dialog timing — the settings menu dismissal + dialog
-    // presentation sequence needs more careful pump timing.
-    testWidgets('sign out shows confirmation dialog', skip: true, (tester) async {
+    testWidgets('sign out shows confirmation dialog', (tester) async {
       services.seedFavorites([
         createTestFavorite(reachId: '1001', riverName: 'Test River'),
       ]);
@@ -253,18 +251,15 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // Open settings menu
       await tester.tap(find.byIcon(CupertinoIcons.ellipsis));
-      await tester.pump(const Duration(milliseconds: 500));
+      await pumpFavoritesReady(tester);
 
-      // Tap sign out - this closes the settings menu and shows confirmation dialog.
-      await tester.tap(find.text('Sign Out').first);
-      // Wait for menu dismissal animation + dialog to appear
-      for (var i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      // Tap sign out — dismisses menu and shows confirmation dialog
+      await tester.tap(find.text('Sign Out'));
+      await pumpFavoritesReady(tester);
 
       // Confirmation dialog should appear
       expect(
@@ -275,7 +270,7 @@ void main() {
 
       // Cancel dismisses the dialog
       await tester.tap(find.text('Cancel'));
-      await tester.pump(const Duration(milliseconds: 500));
+      await pumpFavoritesReady(tester);
 
       // Favorites page should still be showing
       expect(find.byType(FavoritesPage), findsOneWidget);
@@ -300,7 +295,7 @@ void main() {
         authProvider: authProvider,
         favoritesProvider: favoritesProvider,
       ));
-      await tester.pumpAndSettle();
+      await pumpFavoritesReady(tester);
 
       // We can't easily swipe to reveal slide actions in integration tests,
       // but we can verify the card is rendered with the custom name
