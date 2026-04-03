@@ -1,6 +1,7 @@
 // lib/features/auth/providers/auth_provider.dart
 
 import 'dart:async';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:rivr/features/auth/models/auth_user.dart';
@@ -58,6 +59,7 @@ class AuthProvider with ChangeNotifier {
       if (firebaseUser != null) {
         _currentUser = AuthUser.fromFirebaseUser(firebaseUser);
         AppLogger.info('AuthProvider', 'User signed in: ${_currentUser!.uid}');
+        FirebaseCrashlytics.instance.setUserIdentifier(firebaseUser.uid);
 
         // Gate on email verification
         if (!firebaseUser.emailVerified) {
@@ -72,6 +74,7 @@ class AuthProvider with ChangeNotifier {
         _currentUserSettings = null;
         _isAwaitingEmailVerification = false;
         AppLogger.info('AuthProvider', 'User signed out');
+        FirebaseCrashlytics.instance.setUserIdentifier('');
       }
       notifyListeners();
     });

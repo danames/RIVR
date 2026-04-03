@@ -1,7 +1,9 @@
 // lib/main.dart
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart'; // ADD: FCM import
 import 'package:rivr/core/services/app_logger.dart';
 import 'package:rivr/core/services/error_service.dart';
@@ -47,12 +49,16 @@ Future<void> main() async {
   // Initialize Firebase with proper configuration
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Disable Crashlytics data collection in debug to avoid polluting the dashboard
+  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
+
   // Register all services with dependency injection
   setupServiceLocator();
 
   // Catch Flutter framework errors (widget build failures, layout errors, etc.)
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
+    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
     ErrorService.logError(
       'FlutterError',
       details.exception,
@@ -62,6 +68,7 @@ Future<void> main() async {
 
   // Catch platform/async errors not caught by Flutter framework
   PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     ErrorService.logError('PlatformError', error, stackTrace: stack);
     return true;
   };

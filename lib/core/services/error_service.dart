@@ -1,6 +1,7 @@
 // lib/core/services/error_service.dart
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/services.dart';
 import 'package:rivr/core/services/app_logger.dart';
 
@@ -255,8 +256,14 @@ class ErrorService {
   }) {
     AppLogger.error('ErrorService', '$context: ${error.toString()}', error, stackTrace);
 
-    // In production, send to crash reporting service
-    // FirebaseCrashlytics.instance.recordError(error, stackTrace, context: context);
+    // Non-fatal: let Crashlytics know about handled errors too.
+    // setCrashlyticsCollectionEnabled(false) in debug makes this a no-op automatically.
+    FirebaseCrashlytics.instance.recordError(
+      error,
+      stackTrace,
+      reason: context,
+      fatal: false,
+    );
   }
 
   /// Log informational messages for debugging
