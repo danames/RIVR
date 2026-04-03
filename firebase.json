@@ -1,1 +1,50 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"ciroh-rivr-app","appId":"1:359266072243:android:f6fce7b488390e032ae2c6","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"ciroh-rivr-app","appId":"1:359266072243:ios:580364ea6268ade02ae2c6","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"ciroh-rivr-app","configurations":{"android":"1:359266072243:android:f6fce7b488390e032ae2c6","ios":"1:359266072243:ios:580364ea6268ade02ae2c6"}}}}},"functions":[{"source":"functions","codebase":"default","ignore":["node_modules",".git","firebase-debug.log","firebase-debug.*.log","*.local"],"predeploy":["npm --prefix \"$RESOURCE_DIR\" run lint","npm --prefix \"$RESOURCE_DIR\" run build"]}]}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "ciroh-rivr-app",
+          "appId": "1:359266072243:android:f6fce7b488390e032ae2c6",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "ciroh-rivr-app",
+          "appId": "1:359266072243:ios:580364ea6268ade02ae2c6",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "ciroh-rivr-app",
+          "configurations": {
+            "android": "1:359266072243:android:f6fce7b488390e032ae2c6",
+            "ios": "1:359266072243:ios:580364ea6268ade02ae2c6"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ]
+}
