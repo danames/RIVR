@@ -226,8 +226,9 @@ flutter run                           # Run on connected device/emulator
 flutter analyze                       # Static analysis
 flutter test                          # Run tests
 flutter build apk --debug             # Debug Android build
-flutter build appbundle --release     # Signed release AAB (requires android/key.properties)
 flutter build ios --no-codesign       # Debug iOS build (no signing)
+make release-android                  # Signed release AAB with obfuscation (requires android/key.properties)
+make release-ios                      # Release IPA with obfuscation
 cd functions && npm install           # Install Cloud Functions deps
 cd functions && npm run build         # Build Cloud Functions
 firebase deploy --only functions      # Deploy Cloud Functions

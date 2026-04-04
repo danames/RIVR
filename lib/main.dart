@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:rivr/core/services/analytics_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart'; // ADD: FCM import
 import 'package:rivr/core/services/app_logger.dart';
 import 'package:rivr/core/services/error_service.dart';
@@ -123,6 +124,7 @@ class _RivrAppState extends State<RivrApp> {
       ],
       child: CupertinoApp(
         navigatorKey: _navigatorKey,
+        navigatorObservers: [AnalyticsService.instance.observer],
         title: 'RIVR',
         theme: const CupertinoThemeData(brightness: Brightness.light),
         localizationsDelegates: const [

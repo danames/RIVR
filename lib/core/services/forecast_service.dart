@@ -5,6 +5,7 @@ import 'package:rivr/core/models/forecast_chart_data.dart';
 import 'geocoding_service.dart';
 import '../models/reach_data.dart';
 import 'app_logger.dart';
+import 'analytics_service.dart';
 import 'i_noaa_api_service.dart';
 import 'i_reach_cache_service.dart';
 import 'i_flow_unit_preference_service.dart';
@@ -57,6 +58,7 @@ class ForecastService implements IForecastService {
       final cached = _recentResponseCache[reachId];
       if (cached != null && !cached.isExpiredAfter(_responseCacheTtl)) {
         AppLogger.info('ForecastService', 'Cache hit for recent overview: $reachId');
+        AnalyticsService.instance.logForecastLoaded(reachId, fromCache: true);
         return cached.value;
       }
 
@@ -149,6 +151,7 @@ class ForecastService implements IForecastService {
         mediumRangeBlend: null, // This is nullable, so null is OK
       );
 
+      AnalyticsService.instance.logForecastLoaded(reachId, fromCache: false);
       AppLogger.info('ForecastService', 'Overview data loaded successfully');
       AppLogger.debug('ForecastService', 'Final response reach: city=${overviewResponse.reach.city}, state=${overviewResponse.reach.state}');
 

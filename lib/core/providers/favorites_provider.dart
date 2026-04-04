@@ -14,6 +14,7 @@ import '../services/i_forecast_service.dart';
 import '../services/i_reach_cache_service.dart';
 import '../services/i_flow_unit_preference_service.dart';
 import '../services/i_noaa_api_service.dart';
+import '../services/analytics_service.dart';
 
 /// State management for user's favorite rivers
 /// Works with cloud-based favorites (reach IDs only) and manages rich data in memory
@@ -161,6 +162,8 @@ class FavoritesProvider with ChangeNotifier {
       final success = await _favoritesService.addFavorite(reachId);
       if (!success) return false;
 
+      AnalyticsService.instance.logFavoriteAdded(reachId);
+
       // Reload from storage to get updated list
       await _loadFavoritesFromStorage();
 
@@ -193,6 +196,8 @@ class FavoritesProvider with ChangeNotifier {
       final success = await _favoritesService.addFavorite(reachId);
       if (!success) return false;
 
+      AnalyticsService.instance.logFavoriteAdded(reachId);
+
       // Store rich data in session storage
       _sessionData[reachId] = (_sessionData[reachId] ?? FavoriteSessionData.empty).copyWith(
         coordinates: (lat: latitude, lon: longitude),
@@ -220,6 +225,8 @@ class FavoritesProvider with ChangeNotifier {
     try {
       final success = await _favoritesService.removeFavorite(reachId);
       if (!success) return false;
+
+      AnalyticsService.instance.logFavoriteRemoved(reachId);
 
       // Clean up ALL session data in one call
       _sessionData.remove(reachId);
@@ -452,6 +459,8 @@ class FavoritesProvider with ChangeNotifier {
       // Add to cloud storage (reach ID only)
       final success = await _favoritesService.addFavorite(reachId);
       if (!success) return false;
+
+      AnalyticsService.instance.logFavoriteAdded(reachId);
 
       // Store session data
       _sessionData[reachId] = (_sessionData[reachId] ?? FavoriteSessionData.empty).copyWith(

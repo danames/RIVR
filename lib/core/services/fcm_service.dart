@@ -1,11 +1,13 @@
 // lib/services/fcm_service.dart
 
+import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:rivr/core/routing/app_routes.dart';
 import 'package:rivr/core/services/error_service.dart';
+import 'analytics_service.dart';
 import 'app_logger.dart';
 import 'i_user_settings_service.dart';
 import 'i_fcm_service.dart';
@@ -24,6 +26,7 @@ class FCMService implements IFCMService {
 
   bool _isInitialized = false;
   String? _cachedToken;
+  StreamSubscription<String>? _tokenRefreshSubscription;
   GlobalKey<NavigatorState>? _navigatorKey;
 
   @override
@@ -272,6 +275,7 @@ class FCMService implements IFCMService {
         });
       }
 
+      AnalyticsService.instance.logNotificationsEnabled();
       return NotificationPermissionResult.granted;
     } catch (e) {
       AppLogger.error('FcmService', 'Error enabling notifications: $e', e);
@@ -299,6 +303,7 @@ class FCMService implements IFCMService {
       // Delete token from Firebase (prevents old tokens from being used)
       await _messaging.deleteToken();
       AppLogger.info('FcmService', 'Token deleted from Firebase');
+      AnalyticsService.instance.logNotificationsDisabled();
     } catch (e) {
       AppLogger.error('FcmService', 'Error disabling notifications: $e', e);
       ErrorService.logError('FCMService.disableNotifications', e);
@@ -341,8 +346,8 @@ class FCMService implements IFCMService {
         AppLogger.debug('FcmService', 'FCM token unchanged');
       }
 
-      // Listen for future token rotations
-      _messaging.onTokenRefresh.listen((newToken) async {
+      // Listen for future token rotations (only register once)
+      _tokenRefreshSubscription ??= _messaging.onTokenRefresh.listen((newToken) async {
         AppLogger.debug('FcmService', 'Token refreshed: ${newToken.substring(0, 20)}...');
         _cachedToken = newToken;
         await _saveTokenToUserSettings(userId, newToken);
@@ -359,5 +364,7 @@ class FCMService implements IFCMService {
     AppLogger.debug('FcmService', 'Clearing cache');
     _cachedToken = null;
     _isInitialized = false;
+    _tokenRefreshSubscription?.cancel();
+    _tokenRefreshSubscription = null;
   }
 }
