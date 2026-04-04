@@ -53,6 +53,11 @@ class FavoritesProvider with ChangeNotifier {
   // Track loading state per favorite for individual refresh indicators
   final Set<String> _refreshingReachIds = {};
 
+  // Generation counters — prevent stale in-flight results from being applied.
+  // Per-reach counter for individual refreshes; top-level for refreshAll.
+  final Map<String, int> _refreshGenerations = {};
+  int _refreshAllGeneration = 0;
+
   // Getters
   List<FavoriteRiver> get favorites => _buildEnrichedFavorites();
   bool get isLoading => _isLoading;
@@ -232,6 +237,7 @@ class FavoritesProvider with ChangeNotifier {
       _sessionData.remove(reachId);
       _sessionReturnPeriods.remove(reachId);
       _refreshingReachIds.remove(reachId);
+      _refreshGenerations.remove(reachId);
 
       // PERSIST CHANGES TO LOCAL STORAGE
       await _persistSessionDataToLocal();
@@ -404,17 +410,23 @@ class FavoritesProvider with ChangeNotifier {
 
   /// Refresh all favorites flow data (pull-to-refresh)
   Future<void> refreshAllFavorites() async {
+    final gen = ++_refreshAllGeneration;
     _clearError();
 
     // Clear computed caches to force fresh calculations
     _forecastService.clearComputedCaches();
 
-    // Refresh each favorite
-    final refreshTasks = _favorites
-        .map((favorite) => _refreshSingleFavorite(favorite.reachId))
-        .toList();
+    // Refresh each favorite — abandon results if a newer refreshAll was started
+    final refreshTasks = _favorites.map((favorite) async {
+      await _refreshSingleFavorite(favorite.reachId);
+      // No-op if a newer refreshAll has superseded this one (individual
+      // generation guard already dropped stale data in _refreshSingleFavorite)
+    }).toList();
 
     await Future.wait(refreshTasks);
+
+    // Only notify if still the latest refreshAll
+    if (gen == _refreshAllGeneration) notifyListeners();
   }
 
   /// Background refresh of all favorites (app launch).
@@ -484,12 +496,19 @@ class FavoritesProvider with ChangeNotifier {
 
   /// Refresh a single favorite's flow data and store in session
   Future<void> _refreshSingleFavorite(String reachId) async {
+    final gen = (_refreshGenerations[reachId] ?? 0) + 1;
+    _refreshGenerations[reachId] = gen;
+
     try {
       _refreshingReachIds.add(reachId);
       notifyListeners();
 
       // Load efficient data for favorites refresh
       final forecast = await _forecastService.loadCurrentFlowOnly(reachId);
+
+      // Discard result if a newer refresh for this reach has been started
+      if (_refreshGenerations[reachId] != gen) return;
+
       final currentFlow = _forecastService.getCurrentFlow(forecast);
       final currentUnit = _unitService.currentFlowUnit;
 

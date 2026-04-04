@@ -22,6 +22,10 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
   @override
   ForecastResponse? get currentForecast => _currentForecast;
 
+  // Generation counter — incremented on every navigation-away / clear so that
+  // in-flight futures can detect they are stale and discard their results.
+  int _loadingGeneration = 0;
+
   // Current state
   bool _isLoading = false;
   String? _errorMessage;
@@ -72,6 +76,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
 
   // Immediately clear current reach display (fixes wrong river issue)
   void clearCurrentReach() {
+    _loadingGeneration++; // Invalidate any in-flight requests
     _currentForecast = null;
     clearAllComputedCaches();
     _errorMessage = null;
@@ -105,6 +110,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
   /// Load minimal data for overview page display
   /// This is the fastest possible load - shows name, location, current flow immediately
   Future<bool> loadOverviewData(String reachId) async {
+    final gen = ++_loadingGeneration;
     _setLoadingOverview(true);
     _setLoadingPhase('overview');
     _clearError();
@@ -113,6 +119,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       // Check session cache first
       if (sessionCache.containsKey(reachId)) {
         AppLogger.debug('ReachProvider', 'Using cached data for overview: $reachId');
+        if (gen != _loadingGeneration) return false;
         _currentForecast = sessionCache[reachId];
         updateComputedCaches(reachId);
         _setLoadingOverview(false);
@@ -123,6 +130,8 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       // Load overview data from service (fast)
       final forecast = await _forecastService.loadOverviewData(reachId);
 
+      if (gen != _loadingGeneration) return false; // Stale — discard
+
       _currentForecast = forecast;
       updateComputedCaches(reachId);
 
@@ -131,6 +140,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       return true;
     } catch (e) {
       AppLogger.error('ReachProvider', 'Error loading overview data', e);
+      if (gen != _loadingGeneration) return false;
       _setError(e.toString());
       _setLoadingOverview(false);
       _setLoadingPhase('none');
@@ -309,6 +319,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       if (!success) return false;
     }
 
+    final gen = ++_loadingGeneration;
     _setLoadingSupplementary(true);
     _clearError();
 
@@ -318,6 +329,8 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
         reachId,
         _currentForecast!,
       );
+
+      if (gen != _loadingGeneration) return false; // Stale — discard
 
       _currentForecast = enhancedForecast;
       sessionCache[reachId] = enhancedForecast; // Update cache
@@ -331,6 +344,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
     } catch (e) {
       // Don't set error - supplementary data is not critical
       // Keep existing overview data
+      if (gen != _loadingGeneration) return false;
       _setLoadingSupplementary(false);
       _setLoadingPhase('overview'); // Still have overview data
       return false; // Indicate supplementary loading failed, but don't break UI
@@ -340,6 +354,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
   // Keep for backwards compatibility and complete loading
   /// Load complete reach and forecast data
   Future<bool> loadReach(String reachId) async {
+    final gen = ++_loadingGeneration;
     _setLoading(true);
     _setLoadingPhase('complete');
     _clearError();
@@ -347,6 +362,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
     try {
       // Check session cache first
       if (sessionCache.containsKey(reachId)) {
+        if (gen != _loadingGeneration) return false;
         _currentForecast = sessionCache[reachId];
         updateComputedCaches(reachId);
         _setLoading(false);
@@ -357,6 +373,8 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       // Load from service (uses disk cache automatically)
       final forecast = await _forecastService.loadCompleteReachData(reachId);
 
+      if (gen != _loadingGeneration) return false; // Stale — discard
+
       _currentForecast = forecast;
       sessionCache[reachId] = forecast; // Cache for session
       updateComputedCaches(reachId);
@@ -366,6 +384,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       return true;
     } catch (e) {
       AppLogger.error('ReachProvider', 'Error loading complete data', e);
+      if (gen != _loadingGeneration) return false;
       _setError(e.toString());
       _setLoading(false);
       _setLoadingPhase('none');
