@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:rivr/features/auth/providers/auth_provider.dart';
 import 'package:rivr/core/providers/reach_data_provider.dart';
 import 'package:rivr/core/providers/favorites_provider.dart';
+import 'package:rivr/core/providers/connectivity_provider.dart';
 import 'package:rivr/core/services/map_preference_service.dart';
 import 'package:rivr/core/routing/app_router.dart';
 import 'package:rivr/core/services/i_fcm_service.dart';
@@ -121,6 +122,7 @@ class _RivrAppState extends State<RivrApp> {
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => ReachDataProvider()),
         ChangeNotifierProvider(create: (context) => FavoritesProvider()),
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
       child: CupertinoApp(
         navigatorKey: _navigatorKey,
