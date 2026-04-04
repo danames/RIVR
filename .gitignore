@@ -60,5 +60,8 @@ functions/.runtimeconfig.json
 ios/build/
 ios/Flutter/Secrets.xcconfig
 
+# Android signing
+android/key.properties
+
 # Claude Code local configuration
 .claude/
