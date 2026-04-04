@@ -587,12 +587,16 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
               size: 14,
             ),
             const SizedBox(width: 4),
-            Text(
-              widget.favorite.formattedFlow,
-              style: TextStyle(
-                color: CupertinoColors.white.withValues(alpha: 0.9),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+            Flexible(
+              child: Text(
+                widget.favorite.formattedFlow,
+                style: TextStyle(
+                  color: CupertinoColors.white.withValues(alpha: 0.9),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
 
