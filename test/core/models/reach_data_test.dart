@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
+import 'package:rivr/core/models/dtos/reach_data_dto.dart';
 import 'package:rivr/core/models/reach_data.dart';
+import 'package:rivr/core/services/i_flow_unit_preference_service.dart';
 
 import '../../helpers/fake_data.dart';
 import '../../helpers/test_helpers.dart';
@@ -24,7 +27,7 @@ void main() {
     group('fromNoaaApi', () {
       test('parses valid API response', () {
         final json = createTestNoaaApiResponse();
-        final reach = ReachData.fromNoaaApi(json);
+        final reach = ReachDataDto.fromNoaaApi(json).toEntity();
 
         expect(reach.reachId, '23021904');
         expect(reach.riverName, 'Deep Creek');
@@ -36,7 +39,7 @@ void main() {
 
       test('trims whitespace from reachId', () {
         final json = createTestNoaaApiResponse(reachId: '  23021904  ');
-        final reach = ReachData.fromNoaaApi(json);
+        final reach = ReachDataDto.fromNoaaApi(json).toEntity();
         expect(reach.reachId, '23021904');
       });
 
@@ -52,7 +55,7 @@ void main() {
             ],
           },
         );
-        final reach = ReachData.fromNoaaApi(json);
+        final reach = ReachDataDto.fromNoaaApi(json).toEntity();
 
         expect(reach.upstreamReaches, ['23021906', '23023198']);
         expect(reach.downstreamReaches, ['23022058']);
@@ -60,7 +63,7 @@ void main() {
 
       test('handles missing route gracefully', () {
         final json = createTestNoaaApiResponse();
-        final reach = ReachData.fromNoaaApi(json);
+        final reach = ReachDataDto.fromNoaaApi(json).toEntity();
 
         expect(reach.upstreamReaches, isNull);
         expect(reach.downstreamReaches, isNull);
@@ -68,7 +71,7 @@ void main() {
 
       test('throws FormatException on invalid data', () {
         expect(
-          () => ReachData.fromNoaaApi({'invalid': 'data'}),
+          () => ReachDataDto.fromNoaaApi({'invalid': 'data'}),
           throwsA(isA<FormatException>()),
         );
       });
@@ -77,7 +80,7 @@ void main() {
     group('fromReturnPeriodApi', () {
       test('parses return period response', () {
         final json = createTestReturnPeriodApiResponse();
-        final reach = ReachData.fromReturnPeriodApi(json);
+        final reach = ReachDataDto.fromReturnPeriodApi(json).toEntity();
 
         expect(reach.reachId, '23021904');
         expect(reach.returnPeriods, isNotNull);
@@ -90,7 +93,7 @@ void main() {
 
       test('throws FormatException on empty array', () {
         expect(
-          () => ReachData.fromReturnPeriodApi([]),
+          () => ReachDataDto.fromReturnPeriodApi([]),
           throwsA(isA<FormatException>()),
         );
       });
@@ -104,8 +107,8 @@ void main() {
           customName: 'My Creek',
         );
 
-        final json = original.toJson();
-        final restored = ReachData.fromJson(json);
+        final json = ReachDataDto.fromEntity(original).toJson();
+        final restored = ReachDataDto.fromJson(json).toEntity();
 
         expect(restored.reachId, original.reachId);
         expect(restored.riverName, original.riverName);
@@ -129,8 +132,8 @@ void main() {
           customName: null,
         );
 
-        final json = original.toJson();
-        final restored = ReachData.fromJson(json);
+        final json = ReachDataDto.fromEntity(original).toJson();
+        final restored = ReachDataDto.fromJson(json).toEntity();
 
         expect(restored.city, isNull);
         expect(restored.state, isNull);
@@ -279,7 +282,7 @@ void main() {
         'validTime': '2025-06-15T12:00:00.000',
         'flow': 150.5,
       };
-      final point = ForecastPoint.fromJson(json);
+      final point = ForecastPointDto.fromJson(json).toEntity();
 
       expect(point.validTime, DateTime(2025, 6, 15, 12, 0));
       expect(point.flow, 150.5);
@@ -290,7 +293,7 @@ void main() {
         validTime: DateTime(2025, 6, 15, 12, 0),
         flow: 150.5,
       );
-      final json = point.toJson();
+      final json = ForecastPointDto.fromEntity(point).toJson();
 
       expect(json['validTime'], '2025-06-15T12:00:00.000');
       expect(json['flow'], 150.5);
@@ -305,8 +308,8 @@ void main() {
           units: 'CMS',
         );
 
-        final json = original.toJson();
-        final restored = ForecastSeries.fromJson(json);
+        final json = ForecastSeriesDto.fromEntity(original).toJson();
+        final restored = ForecastSeriesDto.fromJson(json).toEntity();
 
         expect(restored.units, 'CMS');
         expect(restored.data.length, 3);
@@ -319,8 +322,8 @@ void main() {
           data: [createTestForecastPoint()],
         );
 
-        final json = series.toJson();
-        final restored = ForecastSeries.fromJson(json);
+        final json = ForecastSeriesDto.fromEntity(series).toJson();
+        final restored = ForecastSeriesDto.fromJson(json).toEntity();
 
         expect(restored.referenceTime, isNull);
       });
@@ -355,19 +358,21 @@ void main() {
       });
     });
 
-    group('withPreferredUnits', () {
+    group('convertToUnit', () {
+      late final IFlowUnitPreferenceService converter;
+      setUpAll(() => converter = GetIt.I<IFlowUnitPreferenceService>());
+
       test('skips conversion when units already match', () {
         final data = [
           ForecastPoint(validTime: DateTime.utc(2025, 6, 15, 12), flow: 100.0),
           ForecastPoint(validTime: DateTime.utc(2025, 6, 15, 13), flow: 200.0),
         ];
 
-        final result = ForecastSeries.withPreferredUnits(
-          originalUnits: 'CFS',
-          preferredUnits: 'CFS',
-          originalData: data,
+        final result = ForecastSeries(
+          units: 'CFS',
+          data: data,
           referenceTime: DateTime.utc(2025, 6, 15),
-        );
+        ).convertToUnit('CFS', converter);
 
         expect(result.units, 'CFS');
         expect(result.data.length, 2);
@@ -380,11 +385,10 @@ void main() {
           ForecastPoint(validTime: DateTime.utc(2025, 6, 15, 12), flow: 100.0),
         ];
 
-        final result = ForecastSeries.withPreferredUnits(
-          originalUnits: 'cfs',
-          preferredUnits: 'CFS',
-          originalData: data,
-        );
+        final result = ForecastSeries(
+          units: 'cfs',
+          data: data,
+        ).convertToUnit('CFS', converter);
 
         // Should NOT convert since cfs normalizes to CFS
         expect(result.data[0].flow, 100.0);
@@ -395,11 +399,10 @@ void main() {
           ForecastPoint(validTime: DateTime.utc(2025, 6, 15, 12), flow: 1.0),
         ];
 
-        final result = ForecastSeries.withPreferredUnits(
-          originalUnits: 'CMS',
-          preferredUnits: 'CFS',
-          originalData: data,
-        );
+        final result = ForecastSeries(
+          units: 'CMS',
+          data: data,
+        ).convertToUnit('CFS', converter);
 
         expect(result.units, 'CFS');
         // 1 CMS = 35.3147 CFS
@@ -411,11 +414,10 @@ void main() {
           ForecastPoint(validTime: DateTime.utc(2025, 6, 15, 12), flow: 35.3147),
         ];
 
-        final result = ForecastSeries.withPreferredUnits(
-          originalUnits: 'CFS',
-          preferredUnits: 'CMS',
-          originalData: data,
-        );
+        final result = ForecastSeries(
+          units: 'CFS',
+          data: data,
+        ).convertToUnit('CMS', converter);
 
         expect(result.units, 'CMS');
         expect(result.data[0].flow, closeTo(1.0, 0.01));
@@ -427,12 +429,11 @@ void main() {
           ForecastPoint(validTime: DateTime.utc(2025, 6, 15, 12), flow: 100.0),
         ];
 
-        final result = ForecastSeries.withPreferredUnits(
-          originalUnits: 'CMS',
-          preferredUnits: 'CFS',
-          originalData: data,
+        final result = ForecastSeries(
+          units: 'CMS',
+          data: data,
           referenceTime: refTime,
-        );
+        ).convertToUnit('CFS', converter);
 
         expect(result.referenceTime, refTime);
       });
@@ -446,11 +447,10 @@ void main() {
           ),
         );
 
-        final result = ForecastSeries.withPreferredUnits(
-          originalUnits: 'CMS',
-          preferredUnits: 'CFS',
-          originalData: data,
-        );
+        final result = ForecastSeries(
+          units: 'CMS',
+          data: data,
+        ).convertToUnit('CFS', converter);
 
         expect(result.data.length, 10);
       });
@@ -461,11 +461,10 @@ void main() {
           ForecastPoint(validTime: DateTime.utc(2025, 6, 15, 13), flow: 200.0),
         ];
 
-        final result = ForecastSeries.withPreferredUnits(
-          originalUnits: 'CMS',
-          preferredUnits: 'CFS',
-          originalData: data,
-        );
+        final result = ForecastSeries(
+          units: 'CMS',
+          data: data,
+        ).convertToUnit('CFS', converter);
 
         expect(result.data[0].validTime, DateTime.utc(2025, 6, 15, 12));
         expect(result.data[1].validTime, DateTime.utc(2025, 6, 15, 13));
@@ -477,6 +476,9 @@ void main() {
     // Return periods are stored in CMS in the real data.
     // Use simple CMS values for predictable threshold conversion.
     late ReachData reachWithPeriods;
+    late final IFlowUnitPreferenceService converter;
+
+    setUpAll(() => converter = GetIt.I<IFlowUnitPreferenceService>());
 
     setUp(() {
       reachWithPeriods = createTestReachData(
@@ -522,11 +524,11 @@ void main() {
     group('getReturnPeriodsInUnit', () {
       test('returns null when returnPeriods is null', () {
         final reach = createTestReachData(returnPeriods: null);
-        expect(reach.getReturnPeriodsInUnit('CFS'), isNull);
+        expect(reach.getReturnPeriodsInUnit('CFS', converter), isNull);
       });
 
       test('returns CMS values when target is CMS', () {
-        final periods = reachWithPeriods.getReturnPeriodsInUnit('CMS');
+        final periods = reachWithPeriods.getReturnPeriodsInUnit('CMS', converter);
         expect(periods, isNotNull);
         // CMS -> CMS = no conversion, values should be the same
         expect(periods![2], closeTo(100.0, 0.01));
@@ -536,7 +538,7 @@ void main() {
       });
 
       test('converts to CFS correctly', () {
-        final periods = reachWithPeriods.getReturnPeriodsInUnit('CFS');
+        final periods = reachWithPeriods.getReturnPeriodsInUnit('CFS', converter);
         expect(periods, isNotNull);
         // 100 CMS * 35.3147 = ~3531.47 CFS
         expect(periods![2], closeTo(3531.47, 1.0));
@@ -546,7 +548,7 @@ void main() {
       });
 
       test('includes all 4 threshold years', () {
-        final periods = reachWithPeriods.getReturnPeriodsInUnit('CFS');
+        final periods = reachWithPeriods.getReturnPeriodsInUnit('CFS', converter);
         expect(periods!.keys, containsAll([2, 5, 10, 25]));
       });
     });
@@ -554,66 +556,65 @@ void main() {
     group('getFlowCategory', () {
       test('returns Unknown when no return periods', () {
         final reach = createTestReachData(returnPeriods: null);
-        expect(reach.getFlowCategory(100.0, 'CMS'), 'Unknown');
+        expect(reach.getFlowCategory(100.0, 'CMS', converter), 'Unknown');
       });
 
       test('returns Normal when flow < 2yr threshold', () {
         // 2yr threshold = 100 CMS, flow = 50 CMS
-        expect(reachWithPeriods.getFlowCategory(50.0, 'CMS'), 'Normal');
+        expect(reachWithPeriods.getFlowCategory(50.0, 'CMS', converter), 'Normal');
       });
 
       test('returns Action when flow between 2yr and 5yr thresholds', () {
         // 2yr = 100, 5yr = 200, flow = 150 CMS
-        expect(reachWithPeriods.getFlowCategory(150.0, 'CMS'), 'Action');
+        expect(reachWithPeriods.getFlowCategory(150.0, 'CMS', converter), 'Action');
       });
 
       test('returns Moderate when flow between 5yr and 10yr thresholds', () {
         // 5yr = 200, 10yr = 300, flow = 250 CMS
-        expect(reachWithPeriods.getFlowCategory(250.0, 'CMS'), 'Moderate');
+        expect(reachWithPeriods.getFlowCategory(250.0, 'CMS', converter), 'Moderate');
       });
 
       test('returns Major when flow between 10yr and 25yr thresholds', () {
         // 10yr = 300, 25yr = 400, flow = 350 CMS
-        expect(reachWithPeriods.getFlowCategory(350.0, 'CMS'), 'Major');
+        expect(reachWithPeriods.getFlowCategory(350.0, 'CMS', converter), 'Major');
       });
 
       test('returns Extreme when flow > 25yr threshold', () {
         // 25yr = 400, flow = 500 CMS
-        expect(reachWithPeriods.getFlowCategory(500.0, 'CMS'), 'Extreme');
+        expect(reachWithPeriods.getFlowCategory(500.0, 'CMS', converter), 'Extreme');
       });
 
       test('works with CFS flow values (converts thresholds)', () {
         // 2yr threshold in CFS: 100 * 35.3147 = ~3531.47
         // Flow of 1000 CFS should be Normal (well below 2yr CFS threshold)
-        expect(reachWithPeriods.getFlowCategory(1000.0, 'CFS'), 'Normal');
+        expect(reachWithPeriods.getFlowCategory(1000.0, 'CFS', converter), 'Normal');
 
         // Flow of 5000 CFS (between 2yr=3531 and 5yr=7063) should be Action
-        expect(reachWithPeriods.getFlowCategory(5000.0, 'CFS'), 'Action');
+        expect(reachWithPeriods.getFlowCategory(5000.0, 'CFS', converter), 'Action');
 
         // Flow of 15000 CFS (above 25yr=14126) should be Extreme
-        expect(reachWithPeriods.getFlowCategory(15000.0, 'CFS'), 'Extreme');
+        expect(reachWithPeriods.getFlowCategory(15000.0, 'CFS', converter), 'Extreme');
       });
 
       test('boundary: flow exactly at 2yr threshold', () {
         // At exactly the threshold, flow is NOT < threshold, so it should be Action
-        expect(reachWithPeriods.getFlowCategory(100.0, 'CMS'), 'Action');
+        expect(reachWithPeriods.getFlowCategory(100.0, 'CMS', converter), 'Action');
       });
 
       test('boundary: flow at zero', () {
-        expect(reachWithPeriods.getFlowCategory(0.0, 'CMS'), 'Normal');
+        expect(reachWithPeriods.getFlowCategory(0.0, 'CMS', converter), 'Normal');
       });
     });
 
     group('getNextThreshold', () {
       test('returns null when no return periods', () {
         final reach = createTestReachData(returnPeriods: null);
-        expect(reach.getNextThreshold(100.0), isNull);
+        expect(reach.getNextThreshold(100.0, 'CFS', converter), isNull);
       });
 
       test('returns lowest threshold above given flow', () {
-        // getNextThreshold takes CFS and converts to CMS internally
-        // CFS flow = 0 -> CMS flow ≈ 0, next threshold should be 2yr (100 CMS)
-        final next = reachWithPeriods.getNextThreshold(0.0);
+        // Flow = 0 CFS -> CMS flow ~ 0, next threshold should be 2yr (100 CMS)
+        final next = reachWithPeriods.getNextThreshold(0.0, 'CFS', converter);
         expect(next, isNotNull);
         expect(next!.key, 2);
         expect(next.value, 100.0);
@@ -622,7 +623,7 @@ void main() {
       test('returns null when flow exceeds all thresholds', () {
         // Very high CFS flow that converts to > 400 CMS
         // 400 CMS = ~14126 CFS, so use 15000 CFS
-        final next = reachWithPeriods.getNextThreshold(15000.0);
+        final next = reachWithPeriods.getNextThreshold(15000.0, 'CFS', converter);
         expect(next, isNull);
       });
     });

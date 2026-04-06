@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:rivr/core/services/app_logger.dart';
+import '../models/dtos/reach_data_dto.dart';
 import '../models/reach_data.dart';
 import 'i_reach_cache_service.dart';
 
@@ -59,7 +60,7 @@ class ReachCacheService implements IReachCacheService {
       }
 
       final wrapper = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-      final reachData = ReachData.fromJson(wrapper['data'] as Map<String, dynamic>);
+      final reachData = ReachDataDto.fromJson(wrapper['data'] as Map<String, dynamic>).toEntity();
 
       // Check expiry (6 months)
       if (reachData.isCacheStale(maxAge: _cacheMaxAge)) {
@@ -93,7 +94,7 @@ class ReachCacheService implements IReachCacheService {
       }
 
       final wrapper = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-      final reachData = ReachData.fromJson(wrapper['data'] as Map<String, dynamic>);
+      final reachData = ReachDataDto.fromJson(wrapper['data'] as Map<String, dynamic>).toEntity();
       final age = DateTime.now().difference(reachData.cachedAt);
 
       // Expired (> 180 days): treat as miss
@@ -125,7 +126,7 @@ class ReachCacheService implements IReachCacheService {
 
       final wrapper = {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
-        'data': reachData.toJson(),
+        'data': ReachDataDto.fromEntity(reachData).toJson(),
       };
       await _fileFor(reachData.reachId).writeAsString(jsonEncode(wrapper));
       AppLogger.debug(
@@ -200,7 +201,7 @@ class ReachCacheService implements IReachCacheService {
           totalBytes += stat.size;
 
           final wrapper = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-          final reachData = ReachData.fromJson(wrapper['data'] as Map<String, dynamic>);
+          final reachData = ReachDataDto.fromJson(wrapper['data'] as Map<String, dynamic>).toEntity();
 
           if (reachData.isCacheStale(maxAge: _cacheMaxAge)) {
             staleCount++;
@@ -262,7 +263,7 @@ class ReachCacheService implements IReachCacheService {
       for (final file in files) {
         try {
           final wrapper = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-          final reachData = ReachData.fromJson(wrapper['data'] as Map<String, dynamic>);
+          final reachData = ReachDataDto.fromJson(wrapper['data'] as Map<String, dynamic>).toEntity();
 
           if (reachData.isCacheStale(maxAge: _cacheMaxAge)) {
             await file.delete();

@@ -225,7 +225,7 @@ class DailyForecastProcessor {
 
     // Use unit-aware flow category calculation
     final flowCategory = reach.hasReturnPeriods
-        ? reach.getFlowCategory(maxFlow, dataUnit)
+        ? reach.getFlowCategory(maxFlow, dataUnit, GetIt.I<IFlowUnitPreferenceService>())
         : 'Unknown';
 
     return DailyFlowForecast(

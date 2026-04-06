@@ -3,6 +3,7 @@
 import 'package:rivr/core/models/hourly_flow_data.dart';
 import 'package:rivr/core/models/forecast_chart_data.dart';
 import 'geocoding_service.dart';
+import '../models/dtos/reach_data_dto.dart';
 import '../models/reach_data.dart';
 import 'app_logger.dart';
 import 'analytics_service.dart';
@@ -103,7 +104,7 @@ class ForecastService implements IForecastService {
         );
 
         // Step 3: Create initial reach data from API response
-        reach = ReachData.fromNoaaApi(reachInfo);
+        reach = ReachDataDto.fromNoaaApi(reachInfo).toEntity();
 
         // Step 4: IMMEDIATELY do reverse geocoding BEFORE any caching
         if (reach.city == null || reach.state == null) {
@@ -139,7 +140,7 @@ class ForecastService implements IForecastService {
 
       // Step 6: Get only short-range forecast for current flow (already converted by NoaaApiService)
       final shortRangeData = await _apiService.fetchCurrentFlowOnly(reachId);
-      final forecastResponse = ForecastResponse.fromJson(shortRangeData);
+      final forecastResponse = ForecastResponseDto.fromApiResponse(shortRangeData);
 
       final overviewResponse = ForecastResponse(
         reach:
@@ -183,9 +184,9 @@ class ForecastService implements IForecastService {
         try {
           final returnPeriods = await _apiService.fetchReturnPeriods(reachId);
           if (returnPeriods.isNotEmpty) {
-            final returnPeriodData = ReachData.fromReturnPeriodApi(
+            final returnPeriodData = ReachDataDto.fromReturnPeriodApi(
               returnPeriods,
-            );
+            ).toEntity();
             reach = reach.mergeWith(returnPeriodData);
 
             // Update cache with complete data
@@ -206,7 +207,7 @@ class ForecastService implements IForecastService {
           reachId,
           'medium_range',
         );
-        final mediumForecast = ForecastResponse.fromJson(mediumRangeData);
+        final mediumForecast = ForecastResponseDto.fromApiResponse(mediumRangeData);
 
         enhancedResponse = ForecastResponse(
           reach: reach,
@@ -237,6 +238,7 @@ class ForecastService implements IForecastService {
           _flowCategoryCache[reachId] = _TimedEntry(reach.getFlowCategory(
             currentFlow,
             currentUnit,
+            _unitService,
           ));
         }
       }
@@ -281,15 +283,15 @@ class ForecastService implements IForecastService {
         AppLogger.info('ForecastService', 'Loaded reach info and return periods');
 
         // Step 3: Create complete reach data
-        reach = ReachData.fromNoaaApi(reachInfo);
+        reach = ReachDataDto.fromNoaaApi(reachInfo).toEntity();
 
         // Wrap return period processing in try-catch
         try {
           // Merge return periods if available
           if (returnPeriods.isNotEmpty) {
-            final returnPeriodData = ReachData.fromReturnPeriodApi(
+            final returnPeriodData = ReachDataDto.fromReturnPeriodApi(
               returnPeriods,
-            );
+            ).toEntity();
             reach = reach.mergeWith(returnPeriodData);
             AppLogger.info('ForecastService', 'Merged return period data');
           }
@@ -311,7 +313,7 @@ class ForecastService implements IForecastService {
       AppLogger.info('ForecastService', 'Loaded fresh forecast data');
 
       // Step 6: Create forecast response with cached/fresh reach data + fresh forecasts
-      final forecastResponse = ForecastResponse.fromJson(forecastData);
+      final forecastResponse = ForecastResponseDto.fromApiResponse(forecastData);
       final completeResponse = ForecastResponse(
         reach: reach, // Use cached or fresh reach data
         analysisAssimilation: forecastResponse.analysisAssimilation,
@@ -330,6 +332,7 @@ class ForecastService implements IForecastService {
           _flowCategoryCache[reachId] = _TimedEntry(reach.getFlowCategory(
             currentFlow,
             currentUnit,
+            _unitService,
           ));
         }
       }
@@ -365,7 +368,7 @@ class ForecastService implements IForecastService {
           reachId,
           forecastType,
         );
-        final forecastResponse = ForecastResponse.fromJson(forecastData);
+        final forecastResponse = ForecastResponseDto.fromApiResponse(forecastData);
 
         final specificResponse = ForecastResponse(
           reach: reach, // Use cached reach data
@@ -385,11 +388,11 @@ class ForecastService implements IForecastService {
 
         // Get reach info (should exist from Phase 1, but fetch if needed)
         final reachInfo = await _apiService.fetchReachInfo(reachId);
-        reach = ReachData.fromNoaaApi(reachInfo);
+        reach = ReachDataDto.fromNoaaApi(reachInfo).toEntity();
         await _cacheService.store(reach);
 
         // Parse forecast response (already converted)
-        final forecastResponse = ForecastResponse.fromJson(forecastData);
+        final forecastResponse = ForecastResponseDto.fromApiResponse(forecastData);
         final specificResponse = ForecastResponse(
           reach: reach,
           analysisAssimilation: forecastResponse.analysisAssimilation,
@@ -477,14 +480,14 @@ class ForecastService implements IForecastService {
         final returnPeriods = futures[1] as List<dynamic>;
 
         // Create reach data
-        reach = ReachData.fromNoaaApi(reachInfo);
+        reach = ReachDataDto.fromNoaaApi(reachInfo).toEntity();
 
         // Add return periods if available
         try {
           if (returnPeriods.isNotEmpty) {
-            final returnPeriodData = ReachData.fromReturnPeriodApi(
+            final returnPeriodData = ReachDataDto.fromReturnPeriodApi(
               returnPeriods,
-            );
+            ).toEntity();
             reach = reach.mergeWith(returnPeriodData);
           }
         } catch (e) {
@@ -502,7 +505,7 @@ class ForecastService implements IForecastService {
       final currentFlowData = await _apiService.fetchCurrentFlowOnly(reachId);
 
       // Parse using the same parser that works in loadOverviewData
-      final forecastResponse = ForecastResponse.fromJson(currentFlowData);
+      final forecastResponse = ForecastResponseDto.fromApiResponse(currentFlowData);
 
       // Step 3: Create response with proper reach data
       final lightweightResponse = ForecastResponse(
@@ -538,7 +541,7 @@ class ForecastService implements IForecastService {
 
       // Load minimal reach info only
       final reachInfo = await _apiService.fetchReachInfo(reachId);
-      final reach = ReachData.fromNoaaApi(reachInfo);
+      final reach = ReachDataDto.fromNoaaApi(reachInfo).toEntity();
 
       // Cache for future use
       await _cacheService.store(reach);
@@ -620,7 +623,7 @@ class ForecastService implements IForecastService {
     if (flow == null) return 'Unknown';
 
     final currentUnit = _unitService.currentFlowUnit;
-    final category = forecast.reach.getFlowCategory(flow, currentUnit);
+    final category = forecast.reach.getFlowCategory(flow, currentUnit, _unitService);
 
     _flowCategoryCache[reachId] = _TimedEntry(category);
     return category;
@@ -973,7 +976,7 @@ class ForecastService implements IForecastService {
     // Step 2: If we already have return periods, classify immediately
     if (overview.reach.hasReturnPeriods && currentFlow != null) {
       final currentUnit = _unitService.currentFlowUnit;
-      flowCategory = overview.reach.getFlowCategory(currentFlow, currentUnit);
+      flowCategory = overview.reach.getFlowCategory(currentFlow, currentUnit, _unitService);
       classificationAvailable = true;
     } else if (currentFlow != null) {
       // Step 3: Load supplementary data for return periods
@@ -981,7 +984,7 @@ class ForecastService implements IForecastService {
         final enhanced = await loadSupplementaryData(reachId, overview);
         if (enhanced.reach.hasReturnPeriods) {
           final currentUnit = _unitService.currentFlowUnit;
-          flowCategory = enhanced.reach.getFlowCategory(currentFlow, currentUnit);
+          flowCategory = enhanced.reach.getFlowCategory(currentFlow, currentUnit, _unitService);
           classificationAvailable = true;
         }
       } catch (e) {

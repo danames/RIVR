@@ -395,6 +395,7 @@ class _InteractiveChartState extends State<InteractiveChart> {
         // Get return periods in current unit using reach method
         final convertedReturnPeriods = reach!.getReturnPeriodsInUnit(
           currentUnit,
+          GetIt.I<IFlowUnitPreferenceService>(),
         );
         if (convertedReturnPeriods != null &&
             convertedReturnPeriods.isNotEmpty) {
@@ -612,7 +613,7 @@ class _InteractiveChartState extends State<InteractiveChart> {
     final currentUnit = _getCurrentFlowUnit();
 
     // Get return periods in current unit using reach method
-    final convertedReturnPeriods = reach!.getReturnPeriodsInUnit(currentUnit);
+    final convertedReturnPeriods = reach!.getReturnPeriodsInUnit(currentUnit, GetIt.I<IFlowUnitPreferenceService>());
     if (convertedReturnPeriods == null || convertedReturnPeriods.isEmpty) {
       return [];
     }
@@ -689,7 +690,7 @@ class _InteractiveChartState extends State<InteractiveChart> {
     final currentUnit = _getCurrentFlowUnit();
 
     // Get return periods in current unit using reach method
-    final convertedReturnPeriods = reach!.getReturnPeriodsInUnit(currentUnit);
+    final convertedReturnPeriods = reach!.getReturnPeriodsInUnit(currentUnit, GetIt.I<IFlowUnitPreferenceService>());
     if (convertedReturnPeriods == null || convertedReturnPeriods.isEmpty) {
       return [];
     }

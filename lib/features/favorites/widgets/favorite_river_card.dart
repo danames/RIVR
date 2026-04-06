@@ -589,7 +589,10 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
             const SizedBox(width: 4),
             Flexible(
               child: Text(
-                widget.favorite.formattedFlow,
+                widget.favorite.formattedFlow(
+                  convertFlow: GetIt.I<IFlowUnitPreferenceService>().convertFlow,
+                  currentUnit: GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit,
+                ),
                 style: TextStyle(
                   color: CupertinoColors.white.withValues(alpha: 0.9),
                   fontSize: 14,

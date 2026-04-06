@@ -134,8 +134,9 @@ class FlowRangeBar extends StatelessWidget {
   Color _getColorForFlow(double flow) {
     if (reach?.hasReturnPeriods == true) {
       // Use reach-specific flow categorization if available
-      final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
-      final category = reach!.getFlowCategory(flow, currentUnit);
+      final unitService = GetIt.I<IFlowUnitPreferenceService>();
+      final currentUnit = unitService.currentFlowUnit;
+      final category = reach!.getFlowCategory(flow, currentUnit, unitService);
       return _getColorForCategory(category);
     } else {
       // Fallback to forecast's overall category

@@ -137,8 +137,9 @@ class MicroBarChart extends StatelessWidget {
   Color _getColorForFlow(double flow) {
     if (reach?.hasReturnPeriods == true) {
       // Flow data is already in user's preferred unit
-      final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
-      final category = reach!.getFlowCategory(flow, currentUnit);
+      final unitService = GetIt.I<IFlowUnitPreferenceService>();
+      final currentUnit = unitService.currentFlowUnit;
+      final category = reach!.getFlowCategory(flow, currentUnit, unitService);
       return _getColorForCategory(category);
     } else {
       // Fallback to gradient based on relative value
@@ -291,8 +292,9 @@ class _MicroBarChartPainter extends CustomPainter {
   Color _getColorForFlow(double flow) {
     if (reach?.hasReturnPeriods == true) {
       // Flow data is already in user's preferred unit
-      final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
-      final category = reach!.getFlowCategory(flow, currentUnit);
+      final unitService = GetIt.I<IFlowUnitPreferenceService>();
+      final currentUnit = unitService.currentFlowUnit;
+      final category = reach!.getFlowCategory(flow, currentUnit, unitService);
       return _getColorForCategory(category);
     } else {
       return _getGradientColor(flow);

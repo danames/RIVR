@@ -1,6 +1,7 @@
 // lib/features/favorites/data/repositories/favorites_repository.dart
 
 import 'package:rivr/core/models/favorite_river.dart';
+import 'package:rivr/core/models/dtos/reach_data_dto.dart';
 import 'package:rivr/core/models/reach_data.dart';
 import 'package:rivr/core/services/i_favorites_service.dart';
 import 'package:rivr/core/services/i_forecast_service.dart';
@@ -86,7 +87,7 @@ class FavoritesRepository implements IFavoritesRepository {
     // Fetch return periods fresh and cache them
     final returnPeriods = await _apiService.fetchReturnPeriods(reachId);
     if (returnPeriods.isNotEmpty) {
-      final returnPeriodData = ReachData.fromReturnPeriodApi(returnPeriods);
+      final returnPeriodData = ReachDataDto.fromReturnPeriodApi(returnPeriods).toEntity();
       if (cached != null) {
         await _cacheService.store(cached.mergeWith(returnPeriodData));
       }

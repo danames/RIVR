@@ -1,6 +1,7 @@
 // lib/features/settings/data/datasources/settings_firestore_datasource.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rivr/core/models/dtos/user_settings_dto.dart';
 import 'package:rivr/core/models/user_settings.dart';
 
 /// Raw Firestore CRUD operations for user settings.
@@ -26,14 +27,14 @@ class SettingsFirestoreDatasource {
         .timeout(const Duration(seconds: 10));
 
     if (!doc.exists || doc.data() == null) return null;
-    return UserSettings.fromJson(doc.data()!);
+    return UserSettingsDto.fromJson(doc.data()!).toEntity();
   }
 
   /// Write a complete settings object to Firestore.
   Future<void> saveSettings(UserSettings settings) async {
     await _usersCollection
         .doc(settings.userId)
-        .set(settings.toJson())
+        .set(UserSettingsDto.fromEntity(settings).toJson())
         .timeout(const Duration(seconds: 10));
   }
 

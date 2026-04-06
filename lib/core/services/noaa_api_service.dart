@@ -4,7 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config.dart';
-import '../models/reach_data.dart';
+import '../models/dtos/reach_data_dto.dart';
 import 'app_logger.dart';
 import 'i_flow_unit_preference_service.dart';
 import 'i_noaa_api_service.dart';
@@ -533,7 +533,7 @@ class NoaaApiService implements INoaaApiService {
 
     try {
       // Parse the series to get the data structure
-      final originalSeries = ForecastSeries.fromJson(seriesData);
+      final originalSeries = ForecastSeriesDto.fromJson(seriesData).toEntity();
       final targetUnit = _unitService.currentFlowUnit;
 
       AppLogger.debug(
@@ -541,16 +541,14 @@ class NoaaApiService implements INoaaApiService {
         'Series conversion - ${originalSeries.units} -> $targetUnit (${originalSeries.data.length} points)',
       );
 
-      // FIXED: The ForecastSeries.withPreferredUnits now prevents double conversion
-      final convertedSeries = ForecastSeries.withPreferredUnits(
-        originalUnits: originalSeries.units,
-        preferredUnits: targetUnit,
-        originalData: originalSeries.data,
-        referenceTime: originalSeries.referenceTime,
+      // Convert to user's preferred unit (prevents double conversion internally)
+      final convertedSeries = originalSeries.convertToUnit(
+        targetUnit,
+        _unitService,
       );
 
       // Convert back to JSON format
-      return convertedSeries.toJson();
+      return ForecastSeriesDto.fromEntity(convertedSeries).toJson();
     } catch (e) {
       AppLogger.warning('NoaaApi', 'Failed to convert series: $e');
       return Map<String, dynamic>.from(seriesData);

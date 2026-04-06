@@ -54,16 +54,16 @@ Auth is the second simplest — Firebase Auth + biometric auth, no caching compl
 
 Untangle the core models from serialization concerns. This phase can be done independently of feature migrations.
 
-- [ ] Create pure `ReachData` entity (immutable, no `fromJson`/`fromNoaaApi`/`toJson`, no framework imports)
-- [ ] Create `ReachDataDto` with parsing logic (`fromNoaaApi`, `fromReturnPeriodApi`, `fromJson`, `toJson`, `toEntity()`)
-- [ ] Move unit conversion out of `ReachData` into a utility or domain service
-- [ ] Create pure `FavoriteRiver` entity (remove `toFirestoreMap`, `fromFirestore`)
-- [ ] Create `FavoriteRiverDto` with Firestore serialization
-- [ ] Create pure `UserSettings` entity (remove `fromJson`, `toJson`)
-- [ ] Create `UserSettingsDto` with serialization
-- [ ] Update all consumers of these models to use entities (UI) or DTOs (datasources)
-- [ ] Update `fake_data.dart` test helpers for new entity/DTO split
-- [ ] Update all model tests for the separated types
+- [x] Create pure `ReachData` entity (immutable, no `fromJson`/`fromNoaaApi`/`toJson`, no framework imports) *(2026-04-06)*
+- [x] Create `ReachDataDto` with parsing logic (`fromNoaaApi`, `fromReturnPeriodApi`, `fromJson`, `toJson`, `toEntity()`) *(2026-04-06)*
+- [x] Move unit conversion out of `ReachData` into a utility or domain service *(2026-04-06 — getReturnPeriodsInUnit, getFlowCategory, getNextThreshold accept IFlowUnitPreferenceService param; ForecastSeries.convertToUnit replaces withPreferredUnits)*
+- [x] Create pure `FavoriteRiver` entity (remove `toJson`, `fromJson`, GetIt dependency) *(2026-04-06)*
+- [x] Create `FavoriteRiverDto` with JSON serialization *(2026-04-06)*
+- [x] Create pure `UserSettings` entity (remove `fromJson`, `toJson`) *(2026-04-06)*
+- [x] Create `UserSettingsDto` with serialization *(2026-04-06)*
+- [x] Update all consumers of these models to use entities (UI) or DTOs (datasources) *(2026-04-06)*
+- [x] Update `fake_data.dart` test helpers for new entity/DTO split *(2026-04-06 — no changes needed, uses constructors directly)*
+- [x] Update all model tests for the separated types *(2026-04-06 — 37 new DTO tests, all existing tests updated)*
 
 ---
 

@@ -58,7 +58,7 @@ class _CurrentFlowStatusCardState extends State<CurrentFlowStatusCard>
     final currentUnit = _getCurrentFlowUnit();
 
     // FIXED: No double conversion - flow is already in preferred unit from API service
-    return reach.getFlowCategory(currentFlow, currentUnit);
+    return reach.getFlowCategory(currentFlow, currentUnit, GetIt.I<IFlowUnitPreferenceService>());
   }
 
   // REMOVED: _convertFlowToCurrentUnit method - no longer needed!
@@ -291,7 +291,7 @@ class _CurrentFlowStatusCardState extends State<CurrentFlowStatusCard>
     final currentUnit = _getCurrentFlowUnit();
 
     // Get return periods in the same unit as current flow
-    final convertedReturnPeriods = reach.getReturnPeriodsInUnit(currentUnit);
+    final convertedReturnPeriods = reach.getReturnPeriodsInUnit(currentUnit, GetIt.I<IFlowUnitPreferenceService>());
     if (convertedReturnPeriods == null || convertedReturnPeriods.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -672,7 +672,7 @@ class _CurrentFlowStatusCardState extends State<CurrentFlowStatusCard>
     final currentUnit = _getCurrentFlowUnit();
 
     // Get return periods converted to current unit
-    final convertedReturnPeriods = reach.getReturnPeriodsInUnit(currentUnit);
+    final convertedReturnPeriods = reach.getReturnPeriodsInUnit(currentUnit, GetIt.I<IFlowUnitPreferenceService>());
     if (convertedReturnPeriods == null) {
       return _buildReturnPeriodNotAvailable();
     }

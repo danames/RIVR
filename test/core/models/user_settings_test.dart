@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rivr/core/models/dtos/user_settings_dto.dart';
 import 'package:rivr/core/models/user_settings.dart';
 
 void main() {
@@ -65,8 +66,8 @@ void main() {
           customBackgroundImagePaths: ['/path/to/img.jpg'],
         );
 
-        final json = original.toJson();
-        final restored = UserSettings.fromJson(json);
+        final json = UserSettingsDto.fromEntity(original).toJson();
+        final restored = UserSettingsDto.fromJson(json).toEntity();
 
         expect(restored.userId, original.userId);
         expect(restored.email, original.email);
@@ -98,7 +99,7 @@ void main() {
           // enableNotifications, notificationFrequency missing
         };
 
-        final settings = UserSettings.fromJson(json);
+        final settings = UserSettingsDto.fromJson(json).toEntity();
         expect(settings.enableNotifications, false);
         expect(settings.notificationFrequency, 1);
         expect(settings.favoriteReachIds, isEmpty);
@@ -107,22 +108,26 @@ void main() {
       });
 
       test('parses CFS flow unit', () {
-        final json = createSettings(preferredFlowUnit: FlowUnit.cfs).toJson();
-        final restored = UserSettings.fromJson(json);
+        final json = UserSettingsDto.fromEntity(
+          createSettings(preferredFlowUnit: FlowUnit.cfs),
+        ).toJson();
+        final restored = UserSettingsDto.fromJson(json).toEntity();
         expect(restored.preferredFlowUnit, FlowUnit.cfs);
       });
 
       test('parses CMS flow unit', () {
-        final json = createSettings(preferredFlowUnit: FlowUnit.cms).toJson();
-        final restored = UserSettings.fromJson(json);
+        final json = UserSettingsDto.fromEntity(
+          createSettings(preferredFlowUnit: FlowUnit.cms),
+        ).toJson();
+        final restored = UserSettingsDto.fromJson(json).toEntity();
         expect(restored.preferredFlowUnit, FlowUnit.cms);
       });
 
       test('parses 24-hour time format', () {
-        final json = createSettings(
-          preferredTimeFormat: TimeFormat.twentyFourHour,
+        final json = UserSettingsDto.fromEntity(
+          createSettings(preferredTimeFormat: TimeFormat.twentyFourHour),
         ).toJson();
-        final restored = UserSettings.fromJson(json);
+        final restored = UserSettingsDto.fromJson(json).toEntity();
         expect(restored.preferredTimeFormat, TimeFormat.twentyFourHour);
       });
     });

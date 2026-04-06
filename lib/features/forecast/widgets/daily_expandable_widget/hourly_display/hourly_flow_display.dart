@@ -160,10 +160,12 @@ class _HourlyFlowDisplayState extends State<HourlyFlowDisplay> {
 
     // Get flow category for the selected hour
     if (widget.reach?.hasReturnPeriods == true && _selectedFlow != null) {
-      final currentUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
+      final unitService = GetIt.I<IFlowUnitPreferenceService>();
+      final currentUnit = unitService.currentFlowUnit;
       _selectedCategory = widget.reach!.getFlowCategory(
         _selectedFlow!,
         currentUnit,
+        unitService,
       );
     } else {
       _selectedCategory = widget.forecast.flowCategory;
@@ -306,8 +308,9 @@ class _HourlyFlowDisplayState extends State<HourlyFlowDisplay> {
 
     String? category;
     if (widget.reach?.hasReturnPeriods == true) {
-      final flowUnit = GetIt.I<IFlowUnitPreferenceService>().currentFlowUnit;
-      category = widget.reach!.getFlowCategory(flow, flowUnit);
+      final unitService = GetIt.I<IFlowUnitPreferenceService>();
+      final flowUnit = unitService.currentFlowUnit;
+      category = widget.reach!.getFlowCategory(flow, flowUnit, unitService);
     } else {
       category = widget.forecast.flowCategory;
     }

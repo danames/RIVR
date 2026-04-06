@@ -49,52 +49,6 @@ class UserSettings {
     required this.updatedAt,
   });
 
-  factory UserSettings.fromJson(Map<String, dynamic> json) {
-    return UserSettings(
-      userId: json['userId'] as String,
-      email: json['email'] as String,
-      firstName: json['firstName'] as String,
-      lastName: json['lastName'] as String,
-      preferredFlowUnit: json['preferredFlowUnit'] == 'cms'
-          ? FlowUnit.cms
-          : FlowUnit.cfs,
-      preferredTimeFormat: json['preferredTimeFormat'] == 'twentyFourHour'
-          ? TimeFormat.twentyFourHour
-          : TimeFormat.twelveHour,
-      enableNotifications: json['enableNotifications'] as bool? ?? false,
-      notificationFrequency: json['notificationFrequency'] as int? ?? 1,
-      favoriteReachIds: List<String>.from(
-        json['favoriteReachIds'] as List? ?? [],
-      ),
-      fcmToken: json['fcmToken'] as String?,
-      customBackgroundImagePaths: List<String>.from(
-        json['customBackgroundImagePaths'] as List? ?? [],
-      ),
-      lastLoginDate: DateTime.parse(json['lastLoginDate'] as String),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'userId': userId,
-      'email': email,
-      'firstName': firstName,
-      'lastName': lastName,
-      'preferredFlowUnit': preferredFlowUnit.value,
-      'preferredTimeFormat': preferredTimeFormat.value,
-      'enableNotifications': enableNotifications,
-      'notificationFrequency': notificationFrequency,
-      'favoriteReachIds': favoriteReachIds,
-      'fcmToken': fcmToken,
-      'customBackgroundImagePaths': customBackgroundImagePaths,
-      'lastLoginDate': lastLoginDate.toIso8601String(),
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-    };
-  }
-
   UserSettings copyWith({
     String? email,
     String? firstName,

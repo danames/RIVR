@@ -283,7 +283,7 @@ class _HorizontalFlowTimelineState extends State<HorizontalFlowTimeline> {
     final currentUnit = _getCurrentFlowUnit();
 
     // Get return periods in the same unit as the flow
-    final convertedReturnPeriods = reach.getReturnPeriodsInUnit(currentUnit);
+    final convertedReturnPeriods = reach.getReturnPeriodsInUnit(currentUnit, GetIt.I<IFlowUnitPreferenceService>());
     if (convertedReturnPeriods == null || convertedReturnPeriods.isEmpty) {
       return 'Unknown';
     }

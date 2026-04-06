@@ -2,6 +2,7 @@
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rivr/core/models/dtos/user_settings_dto.dart';
 import 'package:rivr/core/models/user_settings.dart';
 import 'package:rivr/features/settings/data/datasources/settings_firestore_datasource.dart';
 
@@ -48,7 +49,7 @@ void main() {
       await fakeFirestore
           .collection('users')
           .doc('user1')
-          .set(settings.toJson());
+          .set(UserSettingsDto.fromEntity(settings).toJson());
 
       final result = await datasource.getSettings('user1');
       expect(result, isNotNull);
@@ -87,7 +88,7 @@ void main() {
       await fakeFirestore
           .collection('users')
           .doc('user1')
-          .set(settings.toJson());
+          .set(UserSettingsDto.fromEntity(settings).toJson());
 
       await datasource.updateFields('user1', {'firstName': 'NewName'});
 
@@ -104,7 +105,7 @@ void main() {
       await fakeFirestore
           .collection('users')
           .doc('user1')
-          .set(settings.toJson());
+          .set(UserSettingsDto.fromEntity(settings).toJson());
 
       await datasource.updateFields('user1', {'firstName': 'NewName'});
 
@@ -125,7 +126,7 @@ void main() {
       await fakeFirestore
           .collection('users')
           .doc('user1')
-          .set(settings.toJson());
+          .set(UserSettingsDto.fromEntity(settings).toJson());
 
       final result = await datasource.exists('user1');
       expect(result, isTrue);

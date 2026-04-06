@@ -2,6 +2,7 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/dtos/user_settings_dto.dart';
 import '../models/user_settings.dart';
 import 'app_logger.dart';
 import 'error_service.dart';
@@ -148,7 +149,7 @@ class AuthService implements IAuthService {
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
-          .set(userSettings.toJson())
+          .set(UserSettingsDto.fromEntity(userSettings).toJson())
           .timeout(
             const Duration(seconds: 10),
             onTimeout: () => throw Exception('UserSettings creation timed out'),

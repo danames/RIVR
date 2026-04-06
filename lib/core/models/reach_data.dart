@@ -1,36 +1,31 @@
 // lib/core/models/reach_data.dart
 
-import '../services/app_logger.dart';
-import 'package:get_it/get_it.dart';
 import '../services/i_flow_unit_preference_service.dart';
 
 class ReachData {
   // NOAA reach info
-  final String reachId; // "23021904"
-  final String riverName; // "Deep Creek" (from reaches API 'name' field)
+  final String reachId;
+  final String riverName;
   final double latitude;
   final double longitude;
 
   // Location context (from geocoding)
-  final String? city; // "Spokane"
-  final String? state; // "WA"
+  final String? city;
+  final String? state;
 
   // Available forecast types (from reaches API 'streamflow' array)
-  final List<String>
-  availableForecasts; // ["analysis_assimilation", "short_range", etc.]
+  final List<String> availableForecasts;
 
   // Return periods (from separate return-period API - always in CMS)
-  final Map<int, double>?
-  returnPeriods; // {2: 3518.03, 5: 6119.41, 10: 7841.75}
-  final String returnPeriodUnit = 'cms'; // Always CMS from API
+  final Map<int, double>? returnPeriods;
+  final String returnPeriodUnit = 'cms';
 
   // Routing info (from reaches API)
-  final List<String>? upstreamReaches; // ["23021906", "23023198"]
-  final List<String>? downstreamReaches; // ["23022058"]
+  final List<String>? upstreamReaches;
+  final List<String>? downstreamReaches;
 
   // User customization
-  final String?
-  customName; // User can rename "Deep Creek" to "My Favorite Creek"
+  final String? customName;
 
   // Cache metadata
   final DateTime cachedAt;
@@ -56,138 +51,6 @@ class ReachData {
     this.isPartiallyLoaded = false,
   });
 
-  // Factory constructor from NOAA reaches API
-  factory ReachData.fromNoaaApi(Map<String, dynamic> json) {
-    try {
-      final route = json['route'] as Map<String, dynamic>?;
-
-      return ReachData(
-        reachId: (json['reachId'] as String).trim(),
-        riverName: json['name'] as String,
-        latitude: (json['latitude'] as num).toDouble(),
-        longitude: (json['longitude'] as num).toDouble(),
-        availableForecasts: (json['streamflow'] as List<dynamic>)
-            .map((e) => e.toString())
-            .toList(),
-        upstreamReaches: route?['upstream'] != null
-            ? (route!['upstream'] as List<dynamic>)
-                  .map((e) => (e as Map<String, dynamic>)['reachId'] as String)
-                  .toList()
-            : null,
-        downstreamReaches: route?['downstream'] != null
-            ? (route!['downstream'] as List<dynamic>)
-                  .map((e) => (e as Map<String, dynamic>)['reachId'] as String)
-                  .toList()
-            : null,
-        cachedAt: DateTime.now(),
-        isPartiallyLoaded: false,
-      );
-    } catch (e) {
-      throw FormatException('Failed to parse NOAA reaches API response: $e');
-    }
-  }
-
-  // Factory constructor from return period API (array response)
-  factory ReachData.fromReturnPeriodApi(List<dynamic> jsonArray) {
-    try {
-      if (jsonArray.isEmpty) {
-        throw FormatException('Return period API returned empty array');
-      }
-
-      final json = jsonArray.first as Map<String, dynamic>;
-      final featureId = json['feature_id'].toString();
-
-      final returnPeriods = <int, double>{};
-
-      // Parse all available return periods
-      for (final entry in json.entries) {
-        if (entry.key.startsWith('return_period_')) {
-          final years = int.tryParse(
-            entry.key.substring('return_period_'.length),
-          );
-          final flow = (entry.value as num).toDouble();
-          if (years != null) {
-            returnPeriods[years] = flow;
-          }
-        }
-      }
-
-      return ReachData(
-        reachId: featureId,
-        riverName: 'Unknown', // Will be filled from reaches API
-        latitude: 0.0, // Will be filled from reaches API
-        longitude: 0.0, // Will be filled from reaches API
-        availableForecasts: [],
-        returnPeriods: returnPeriods,
-        cachedAt: DateTime.now(),
-        isPartiallyLoaded: true, // This is partial data
-      );
-    } catch (e) {
-      throw FormatException('Failed to parse return period API response: $e');
-    }
-  }
-
-  // Factory constructor from cached JSON
-  factory ReachData.fromJson(Map<String, dynamic> json) {
-    return ReachData(
-      reachId: json['reachId'] as String,
-      riverName: json['riverName'] as String,
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
-      city: json['city'] as String?,
-      state: json['state'] as String?,
-      availableForecasts: (json['availableForecasts'] as List<dynamic>)
-          .map((e) => e.toString())
-          .toList(),
-      returnPeriods: json['returnPeriods'] != null
-          ? Map<int, double>.from(
-              (json['returnPeriods'] as Map<String, dynamic>).map(
-                (key, value) =>
-                    MapEntry(int.parse(key), (value as num).toDouble()),
-              ),
-            )
-          : null,
-      upstreamReaches: json['upstreamReaches'] != null
-          ? (json['upstreamReaches'] as List<dynamic>)
-                .map((e) => e.toString())
-                .toList()
-          : null,
-      downstreamReaches: json['downstreamReaches'] != null
-          ? (json['downstreamReaches'] as List<dynamic>)
-                .map((e) => e.toString())
-                .toList()
-          : null,
-      customName: json['customName'] as String?,
-      cachedAt: DateTime.parse(json['cachedAt'] as String),
-      lastApiUpdate: json['lastApiUpdate'] != null
-          ? DateTime.parse(json['lastApiUpdate'] as String)
-          : null,
-      isPartiallyLoaded: json['isPartiallyLoaded'] as bool? ?? false,
-    );
-  }
-
-  // Convert to JSON for caching
-  Map<String, dynamic> toJson() {
-    return {
-      'reachId': reachId,
-      'riverName': riverName,
-      'latitude': latitude,
-      'longitude': longitude,
-      'city': city,
-      'state': state,
-      'availableForecasts': availableForecasts,
-      'returnPeriods': returnPeriods?.map(
-        (key, value) => MapEntry(key.toString(), value),
-      ),
-      'upstreamReaches': upstreamReaches,
-      'downstreamReaches': downstreamReaches,
-      'customName': customName,
-      'cachedAt': cachedAt.toIso8601String(),
-      'lastApiUpdate': lastApiUpdate?.toIso8601String(),
-      'isPartiallyLoaded': isPartiallyLoaded,
-    };
-  }
-
   // Merge with data from another source (like return periods)
   ReachData mergeWith(ReachData other) {
     return ReachData(
@@ -206,11 +69,10 @@ class ReachData {
       customName: customName ?? other.customName,
       cachedAt: DateTime.now(),
       lastApiUpdate: other.lastApiUpdate ?? lastApiUpdate,
-      isPartiallyLoaded: false, // Merged data is complete
+      isPartiallyLoaded: false,
     );
   }
 
-  // Update with user customizations
   ReachData copyWith({
     String? customName,
     String? city,
@@ -240,23 +102,19 @@ class ReachData {
   String get displayName => customName ?? riverName;
   bool get hasCustomName => customName != null && customName!.isNotEmpty;
 
-  // Location formatting for subtitles
   String get formattedLocation =>
       city != null && state != null ? '$city, $state' : '';
 
-  // Location subtitle with coordinate fallback (fixes the subtitle issue)
   String get formattedLocationSubtitle {
     if (city != null && state != null) {
       return '$city, $state';
     }
-    // Fallback to coordinates if no city/state
     return '${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
   }
 
   bool get hasReturnPeriods =>
       returnPeriods != null && returnPeriods!.isNotEmpty;
 
-  // Check if core location data is available
   bool get hasLocationData =>
       latitude != 0.0 && longitude != 0.0 && riverName != 'Unknown';
 
@@ -264,65 +122,52 @@ class ReachData {
     return DateTime.now().difference(cachedAt) > maxAge;
   }
 
-  /// Get return periods converted to specified unit
-  Map<int, double>? getReturnPeriodsInUnit(String targetUnit) {
+  /// Get return periods converted to specified unit.
+  Map<int, double>? getReturnPeriodsInUnit(
+    String targetUnit,
+    IFlowUnitPreferenceService converter,
+  ) {
     if (returnPeriods == null) return null;
 
-    final converter = GetIt.I<IFlowUnitPreferenceService>();
     return returnPeriods!.map(
       (year, cmsValue) =>
           MapEntry(year, converter.convertFlow(cmsValue, 'CMS', targetUnit)),
     );
   }
 
-  /// Get flood risk category based on NOAA return periods (unit-agnostic)
-  String getFlowCategory(double flowValue, String flowUnit) {
+  /// Get flood risk category based on NOAA return periods.
+  String getFlowCategory(
+    double flowValue,
+    String flowUnit,
+    IFlowUnitPreferenceService converter,
+  ) {
     if (!hasReturnPeriods) return 'Unknown';
 
-    AppLogger.debug('ReachData', 'getFlowCategory: flowValue=$flowValue, flowUnit=$flowUnit');
-
-    // Get return periods in the same unit as the flow value
-    final periods = getReturnPeriodsInUnit(flowUnit);
+    final periods = getReturnPeriodsInUnit(flowUnit, converter);
     if (periods == null) return 'Unknown';
 
-    AppLogger.debug('ReachData', 'Return periods in $flowUnit: $periods');
-
-    // Get threshold values for each return period
     final threshold2yr = periods[2];
     final threshold5yr = periods[5];
     final threshold10yr = periods[10];
     final threshold25yr = periods[25];
 
-    // Classify flow based on NOAA flood risk categories
-    if (threshold2yr != null && flowValue < threshold2yr) {
-      AppLogger.debug('ReachData', 'Classification: Normal (flow < 2yr threshold)');
-      return 'Normal'; // Below 2-year return period
-    }
-
-    if (threshold5yr != null && flowValue < threshold5yr) {
-      AppLogger.debug('ReachData', 'Classification: Action (flow < 5yr threshold)');
-      return 'Action'; // Above 2-year, below 5-year return period
-    }
-
-    if (threshold10yr != null && flowValue < threshold10yr) {
-      AppLogger.debug('ReachData', 'Classification: Moderate (flow < 10yr threshold)');
-      return 'Moderate'; // Above 5-year, below 10-year return period
-    }
-
-    if (threshold25yr != null && flowValue < threshold25yr) {
-      AppLogger.debug('ReachData', 'Classification: Major (flow < 25yr threshold)');
-      return 'Major'; // Above 10-year, below 25-year return period
-    }
-
-    AppLogger.debug('ReachData', 'Classification: Extreme (flow > all thresholds)');
-    return 'Extreme'; // Above 25-year return period
+    if (threshold2yr != null && flowValue < threshold2yr) return 'Normal';
+    if (threshold5yr != null && flowValue < threshold5yr) return 'Action';
+    if (threshold10yr != null && flowValue < threshold10yr) return 'Moderate';
+    if (threshold25yr != null && flowValue < threshold25yr) return 'Major';
+    return 'Extreme';
   }
 
-  // Get next return period threshold
-  MapEntry<int, double>? getNextThreshold(double flowCfs) {
+  /// Get next return period threshold above the given flow value.
+  MapEntry<int, double>? getNextThreshold(
+    double flowValue,
+    String flowUnit,
+    IFlowUnitPreferenceService converter,
+  ) {
     if (!hasReturnPeriods) return null;
 
-    final flowCms = flowCfs * 0.0283168;
+    // Convert flow to CMS for comparison with return periods (always in CMS)
+    final flowCms = converter.convertFlow(flowValue, flowUnit, 'CMS');
     final periods = returnPeriods!.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
@@ -357,103 +202,54 @@ class ForecastPoint {
 
   ForecastPoint({required this.validTime, required this.flow});
 
-  factory ForecastPoint.fromJson(Map<String, dynamic> json) {
-    return ForecastPoint(
-      validTime: DateTime.parse(json['validTime'] as String),
-      flow: (json['flow'] as num).toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {'validTime': validTime.toIso8601String(), 'flow': flow};
-  }
-
   @override
   String toString() => 'ForecastPoint{validTime: $validTime, flow: $flow}';
 }
-
-// lib/core/models/reach_data.dart - ForecastSeries class with fix
 
 class ForecastSeries {
   final DateTime? referenceTime;
   final String units;
   final List<ForecastPoint> data;
 
-  ForecastSeries({this.referenceTime, required this.units, required this.data});
+  ForecastSeries({
+    this.referenceTime,
+    required this.units,
+    required this.data,
+  });
 
-  /// Factory constructor for unit conversion with double conversion prevention
-  /// FIXED: Added check to prevent double conversion
-  factory ForecastSeries.withPreferredUnits({
-    required String originalUnits,
-    required String preferredUnits,
-    required List<ForecastPoint> originalData,
-    DateTime? referenceTime,
-  }) {
-    final converter = GetIt.I<IFlowUnitPreferenceService>();
+  /// Convert this series to a different unit.
+  ///
+  /// Returns a new [ForecastSeries] with all data points converted.
+  /// If units already match, returns a copy without re-converting.
+  ForecastSeries convertToUnit(
+    String targetUnit,
+    IFlowUnitPreferenceService converter,
+  ) {
+    final normalizedCurrent = converter.normalizeUnit(units);
+    final normalizedTarget = converter.normalizeUnit(targetUnit);
 
-    // CRITICAL FIX: Normalize units for comparison to prevent double conversion
-    final normalizedOriginalUnits = converter.normalizeUnit(originalUnits);
-    final normalizedPreferredUnits = converter.normalizeUnit(preferredUnits);
-
-    // MISSING LOGIC: If units are already the same, don't convert!
-    if (normalizedOriginalUnits == normalizedPreferredUnits) {
-      AppLogger.debug(
-        'ReachData',
-        'ForecastSeries: Units already match ($normalizedOriginalUnits), skipping conversion',
-      );
+    if (normalizedCurrent == normalizedTarget) {
       return ForecastSeries(
         referenceTime: referenceTime,
-        units: preferredUnits, // Use preferred format for consistency
-        data: originalData, // Use data as-is, no conversion needed
+        units: targetUnit,
+        data: data,
       );
     }
 
-    AppLogger.debug(
-      'ReachData',
-      'ForecastSeries: Converting from $normalizedOriginalUnits to $normalizedPreferredUnits',
-    );
-
-    // Only convert if units are actually different
-    final convertedData = originalData
+    final convertedData = data
         .map(
           (point) => ForecastPoint(
             validTime: point.validTime,
-            flow: converter.convertFlow(
-              point.flow,
-              originalUnits,
-              preferredUnits,
-            ),
+            flow: converter.convertFlow(point.flow, units, targetUnit),
           ),
         )
         .toList();
 
     return ForecastSeries(
       referenceTime: referenceTime,
-      units: preferredUnits,
+      units: targetUnit,
       data: convertedData,
     );
-  }
-
-  factory ForecastSeries.fromJson(Map<String, dynamic> json) {
-    return ForecastSeries(
-      referenceTime: json['referenceTime'] != null
-          ? DateTime.parse(json['referenceTime'] as String)
-          : null,
-      units: json['units'] as String? ?? '',
-      data: json['data'] != null
-          ? (json['data'] as List<dynamic>)
-                .map((e) => ForecastPoint.fromJson(e as Map<String, dynamic>))
-                .toList()
-          : [],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'referenceTime': referenceTime?.toIso8601String(),
-      'units': units,
-      'data': data.map((e) => e.toJson()).toList(),
-    };
   }
 
   bool get isEmpty => data.isEmpty;
@@ -477,14 +273,14 @@ class ForecastSeries {
     return closest?.flow;
   }
 
-  // Get flow for current hour bucket (not just closest time)
+  // Get flow for current hour bucket
   double? getCurrentHourFlow() {
     if (data.isEmpty) return null;
 
     final now = DateTime.now();
     final currentHour = DateTime(now.year, now.month, now.day, now.hour);
 
-    // First, try to find exact current hour match
+    // Try to find exact current hour match
     for (final point in data) {
       final pointHour = DateTime(
         point.validTime.toLocal().year,
@@ -512,7 +308,7 @@ class ForecastSeries {
       }
     }
 
-    // Fallback to closest time if no current/future hour found
+    // Fallback to closest time
     return getFlowAt(DateTime.now().toUtc());
   }
 
@@ -525,8 +321,8 @@ class ForecastResponse {
   final ReachData reach;
   final ForecastSeries? analysisAssimilation;
   final ForecastSeries? shortRange;
-  final Map<String, ForecastSeries> mediumRange; // mean, member1, member2, etc.
-  final Map<String, ForecastSeries> longRange; // mean, member1, member2, etc.
+  final Map<String, ForecastSeries> mediumRange;
+  final Map<String, ForecastSeries> longRange;
   final ForecastSeries? mediumRangeBlend;
 
   ForecastResponse({
@@ -538,184 +334,7 @@ class ForecastResponse {
     this.mediumRangeBlend,
   });
 
-  factory ForecastResponse.fromJson(Map<String, dynamic> json) {
-    return ForecastResponse(
-      reach: ReachData.fromNoaaApi(json['reach'] as Map<String, dynamic>),
-      analysisAssimilation: _parseForecastSection(
-        json['analysisAssimilation'],
-        'analysis_assimilation',
-      ),
-      shortRange: _parseForecastSection(json['shortRange'], 'short_range'),
-      mediumRange: _parseEnsembleForecast(json['mediumRange'], 'medium_range'),
-      longRange: _parseEnsembleForecast(json['longRange'], 'long_range'),
-      mediumRangeBlend: _parseForecastSection(
-        json['mediumRangeBlend'],
-        'medium_range_blend',
-      ),
-    );
-  }
-
-  // Enhanced parsing for single forecasts with series or mean data
-  static ForecastSeries? _parseForecastSection(
-    dynamic section,
-    String forecastType,
-  ) {
-    if (section == null || section is! Map<String, dynamic>) {
-      AppLogger.debug('ReachData', 'ForecastParser: No data for $forecastType');
-      return null;
-    }
-
-    // STEP 1: Try 'series' data first (used by short_range)
-    final series = section['series'];
-    if (series != null && series is Map<String, dynamic>) {
-      try {
-        final forecastSeries = ForecastSeries.fromJson(series);
-        if (forecastSeries.isNotEmpty) {
-          AppLogger.debug(
-            'ReachData',
-            'ForecastParser: Using series data for $forecastType (${forecastSeries.data.length} points)',
-          );
-          return forecastSeries;
-        }
-      } catch (e) {
-        AppLogger.error('ReachData', 'ForecastParser: Series data invalid for $forecastType', e);
-      }
-    }
-
-    // STEP 2: Try 'mean' data (used by medium_range/long_range sometimes)
-    final mean = section['mean'];
-    if (mean != null && mean is Map<String, dynamic>) {
-      try {
-        final forecastSeries = ForecastSeries.fromJson(mean);
-        if (forecastSeries.isNotEmpty) {
-          AppLogger.debug(
-            'ReachData',
-            'ForecastParser: Using mean data for $forecastType (${forecastSeries.data.length} points)',
-          );
-          return forecastSeries;
-        }
-      } catch (e) {
-        AppLogger.error('ReachData', 'ForecastParser: Mean data invalid for $forecastType', e);
-      }
-    }
-
-    // STEP 3: Fall back to ensemble members dynamically
-    final memberKeys = section.keys
-        .where((key) => key.startsWith('member'))
-        .toList();
-    memberKeys.sort(); // member1, member2, etc.
-
-    for (final memberKey in memberKeys) {
-      final memberData = section[memberKey];
-      if (memberData != null && memberData is Map<String, dynamic>) {
-        try {
-          final memberSeries = ForecastSeries.fromJson(memberData);
-          if (memberSeries.isNotEmpty) {
-            AppLogger.debug(
-              'ReachData',
-              'ForecastParser: Using $memberKey data for $forecastType (${memberSeries.data.length} points)',
-            );
-            return memberSeries;
-          }
-        } catch (e) {
-          AppLogger.error(
-            'ReachData',
-            'ForecastParser: $memberKey data invalid for $forecastType',
-            e,
-          );
-          continue; // Try next member
-        }
-      }
-    }
-
-    AppLogger.debug(
-      'ReachData',
-      'ForecastParser: No valid data found for $forecastType (tried series, mean, and ${memberKeys.length} members)',
-    );
-    return null;
-  }
-
-  // Enhanced ensemble parsing to collect ALL available data
-  static Map<String, ForecastSeries> _parseEnsembleForecast(
-    dynamic section,
-    String forecastType,
-  ) {
-    if (section == null || section is! Map<String, dynamic>) {
-      AppLogger.debug('ReachData', 'ForecastParser: No ensemble data for $forecastType');
-      return {};
-    }
-
-    final result = <String, ForecastSeries>{};
-
-    // STEP 1: Try to get 'series' data and store as 'mean'
-    final seriesData = section['series'];
-    if (seriesData != null && seriesData is Map<String, dynamic>) {
-      try {
-        final series = ForecastSeries.fromJson(seriesData);
-        if (series.isNotEmpty) {
-          result['mean'] = series;
-          AppLogger.debug(
-            'ReachData',
-            'ForecastParser: Found series data for $forecastType as mean (${series.data.length} points)',
-          );
-        }
-      } catch (e) {
-        AppLogger.error('ReachData', 'ForecastParser: Series data invalid for $forecastType', e);
-      }
-    }
-
-    // STEP 2: Try to get explicit 'mean' data (overrides series if both exist)
-    final meanData = section['mean'];
-    if (meanData != null && meanData is Map<String, dynamic>) {
-      try {
-        final mean = ForecastSeries.fromJson(meanData);
-        if (mean.isNotEmpty) {
-          result['mean'] = mean;
-          AppLogger.debug(
-            'ReachData',
-            'ForecastParser: Found explicit mean data for $forecastType (${mean.data.length} points)',
-          );
-        }
-      } catch (e) {
-        AppLogger.error('ReachData', 'ForecastParser: Mean data invalid for $forecastType', e);
-      }
-    }
-
-    // STEP 3: Collect ALL ensemble members dynamically
-    final memberKeys = section.keys
-        .where((key) => key.startsWith('member'))
-        .toList();
-    memberKeys.sort(); // Ensure consistent ordering: member1, member2, etc.
-
-    for (final memberKey in memberKeys) {
-      final memberData = section[memberKey];
-      if (memberData != null && memberData is Map<String, dynamic>) {
-        try {
-          final memberSeries = ForecastSeries.fromJson(memberData);
-          if (memberSeries.isNotEmpty) {
-            result[memberKey] = memberSeries;
-          }
-        } catch (e) {
-          // Skip invalid members silently
-          continue;
-        }
-      }
-    }
-
-    final memberCount = memberKeys.length;
-    final validMemberCount = result.keys
-        .where((k) => k.startsWith('member'))
-        .length;
-
-    AppLogger.debug(
-      'ReachData',
-      'ForecastParser: Found ${result.length} valid series for $forecastType: ${result.keys.join(", ")} ($validMemberCount/$memberCount members valid)',
-    );
-
-    return result;
-  }
-
-  // Enhanced primary forecast getter with automatic fallback
+  // Primary forecast getter with automatic fallback
   ForecastSeries? getPrimaryForecast(String forecastType) {
     switch (forecastType.toLowerCase()) {
       case 'analysis_assimilation':
@@ -723,11 +342,9 @@ class ForecastResponse {
       case 'short_range':
         return shortRange;
       case 'medium_range':
-        // Try mean first, fall back to first available member
         if (mediumRange['mean']?.isNotEmpty == true) {
           return mediumRange['mean'];
         }
-        // Dynamically find first available member
         final memberKeys = mediumRange.keys
             .where((k) => k.startsWith('member'))
             .toList();
@@ -739,11 +356,9 @@ class ForecastResponse {
         }
         return null;
       case 'long_range':
-        // Try mean first, fall back to first available member
         if (longRange['mean']?.isNotEmpty == true) {
           return longRange['mean'];
         }
-        // Dynamically find first available member
         final memberKeys = longRange.keys
             .where((k) => k.startsWith('member'))
             .toList();
@@ -761,7 +376,6 @@ class ForecastResponse {
     }
   }
 
-  // Get all ensemble members for medium/long range
   List<ForecastSeries> getEnsembleMembers(String forecastType) {
     final ensemble = forecastType.toLowerCase() == 'medium_range'
         ? mediumRange
@@ -773,28 +387,23 @@ class ForecastResponse {
         .toList();
   }
 
-  // Get all ensemble data including mean (for hydrographs)
   Map<String, ForecastSeries> getAllEnsembleData(String forecastType) {
     return forecastType.toLowerCase() == 'medium_range'
         ? Map.from(mediumRange)
         : Map.from(longRange);
   }
 
-  // Get the latest flow value with automatic fallback
   double? getLatestFlow(String forecastType) {
     final forecast = getPrimaryForecast(forecastType);
     if (forecast == null || forecast.isEmpty) return null;
 
-    // For short_range, use current hour logic instead of closest time
     if (forecastType.toLowerCase() == 'short_range') {
       return forecast.getCurrentHourFlow();
     }
 
-    // For other forecast types, use existing closest time logic
     return forecast.getFlowAt(DateTime.now().toUtc());
   }
 
-  // Get data source info for debugging
   String getDataSource(String forecastType) {
     switch (forecastType.toLowerCase()) {
       case 'medium_range':

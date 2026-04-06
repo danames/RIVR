@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:rivr/core/models/dtos/reach_data_dto.dart';
 import 'package:rivr/core/models/reach_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/favorite_river.dart';
@@ -584,7 +585,7 @@ class FavoritesProvider with ChangeNotifier {
 
       if (returnPeriods.isNotEmpty) {
         // Parse return periods
-        final returnPeriodData = ReachData.fromReturnPeriodApi(returnPeriods);
+        final returnPeriodData = ReachDataDto.fromReturnPeriodApi(returnPeriods).toEntity();
         _sessionReturnPeriods[reachId] = returnPeriodData.returnPeriods!;
 
         // Cache for future use

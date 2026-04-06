@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rivr/core/models/dtos/favorite_river_dto.dart';
 import 'package:rivr/core/models/favorite_river.dart';
 
 void main() {
@@ -59,8 +60,8 @@ void main() {
           lastUpdated: DateTime(2025, 6, 15, 12, 0),
         );
 
-        final json = original.toJson();
-        final restored = FavoriteRiver.fromJson(json);
+        final json = FavoriteRiverDto.fromEntity(original).toJson();
+        final restored = FavoriteRiverDto.fromJson(json).toEntity();
 
         expect(restored.reachId, original.reachId);
         expect(restored.customName, original.customName);
@@ -76,8 +77,8 @@ void main() {
 
       test('handles null optional fields', () {
         const original = FavoriteRiver(reachId: '123', displayOrder: 1);
-        final json = original.toJson();
-        final restored = FavoriteRiver.fromJson(json);
+        final json = FavoriteRiverDto.fromEntity(original).toJson();
+        final restored = FavoriteRiverDto.fromJson(json).toEntity();
 
         expect(restored.customName, isNull);
         expect(restored.lastKnownFlow, isNull);

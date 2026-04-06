@@ -1,27 +1,21 @@
 // lib/core/models/favorite_river.dart
 
-import 'package:get_it/get_it.dart';
-import 'package:rivr/core/services/i_flow_unit_preference_service.dart';
-import 'package:rivr/core/services/app_logger.dart';
-
-/// Simple model for storing user's favorite rivers
-/// Designed for JSON serialization with SharedPreferences
-/// FIXED: Added unit tracking to prevent double conversion
+/// Pure domain entity for a user's favorite river.
+///
+/// No framework imports (GetIt, Firebase, etc.) — serialization is handled
+/// by [FavoriteRiverDto]. Unit conversion is performed by callers that have
+/// access to IFlowUnitPreferenceService.
 class FavoriteRiver {
-  final String reachId; // Links to existing ReachData
-  final String? customName; // User override for display name
-  final String? riverName; // NOAA river name (cached from API)
-  final String?
-  customImageAsset; // Asset path like 'assets/images/rivers/mountain/river1.webp'
-  final int displayOrder; // For user reordering (0 = first)
-  final double? lastKnownFlow; // Cached flow value for offline display
-  final String?
-  storedFlowUnit; // CRITICAL FIX: Track what unit the stored flow is in
-  final DateTime? lastUpdated; // When flow was last refreshed
-
-  // Cached coordinates for efficient map marker positioning
-  final double? latitude; // Cached reach latitude
-  final double? longitude; // Cached reach longitude
+  final String reachId;
+  final String? customName;
+  final String? riverName;
+  final String? customImageAsset;
+  final int displayOrder;
+  final double? lastKnownFlow;
+  final String? storedFlowUnit;
+  final DateTime? lastUpdated;
+  final double? latitude;
+  final double? longitude;
 
   const FavoriteRiver({
     required this.reachId,
@@ -30,48 +24,12 @@ class FavoriteRiver {
     this.customImageAsset,
     required this.displayOrder,
     this.lastKnownFlow,
-    this.storedFlowUnit, // FIXED: Add unit tracking parameter
+    this.storedFlowUnit,
     this.lastUpdated,
     this.latitude,
     this.longitude,
   });
 
-  /// Create from JSON (for SharedPreferences loading)
-  factory FavoriteRiver.fromJson(Map<String, dynamic> json) {
-    return FavoriteRiver(
-      reachId: json['reachId'] as String,
-      customName: json['customName'] as String?,
-      riverName: json['riverName'] as String?,
-      customImageAsset: json['customImageAsset'] as String?,
-      displayOrder: json['displayOrder'] as int,
-      lastKnownFlow: json['lastKnownFlow'] as double?,
-      storedFlowUnit:
-          json['storedFlowUnit'] as String?, // FIXED: Load stored unit
-      lastUpdated: json['lastUpdated'] != null
-          ? DateTime.parse(json['lastUpdated'] as String)
-          : null,
-      latitude: json['latitude'] as double?,
-      longitude: json['longitude'] as double?,
-    );
-  }
-
-  /// Convert to JSON (for SharedPreferences storage)
-  Map<String, dynamic> toJson() {
-    return {
-      'reachId': reachId,
-      'customName': customName,
-      'riverName': riverName,
-      'customImageAsset': customImageAsset,
-      'displayOrder': displayOrder,
-      'lastKnownFlow': lastKnownFlow,
-      'storedFlowUnit': storedFlowUnit, // FIXED: Save stored unit
-      'lastUpdated': lastUpdated?.toIso8601String(),
-      'latitude': latitude,
-      'longitude': longitude,
-    };
-  }
-
-  /// Create a copy with updated values
   FavoriteRiver copyWith({
     String? reachId,
     String? customName,
@@ -79,7 +37,7 @@ class FavoriteRiver {
     String? customImageAsset,
     int? displayOrder,
     double? lastKnownFlow,
-    String? storedFlowUnit, // FIXED: Add to copyWith method
+    String? storedFlowUnit,
     DateTime? lastUpdated,
     double? latitude,
     double? longitude,
@@ -91,66 +49,41 @@ class FavoriteRiver {
       customImageAsset: customImageAsset ?? this.customImageAsset,
       displayOrder: displayOrder ?? this.displayOrder,
       lastKnownFlow: lastKnownFlow ?? this.lastKnownFlow,
-      storedFlowUnit:
-          storedFlowUnit ?? this.storedFlowUnit, // FIXED: Include in copy
+      storedFlowUnit: storedFlowUnit ?? this.storedFlowUnit,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
     );
   }
 
-  /// Check if coordinates are cached and available for map markers
-  bool get hasCoordinates {
-    return latitude != null && longitude != null;
-  }
+  bool get hasCoordinates => latitude != null && longitude != null;
 
-  /// Get display name with enhanced priority logic:
-  /// 1. Custom name (if user renamed it)
-  /// 2. NOAA river name (from API)
-  /// 3. Fallback to station ID
+  /// Display name priority: custom name > NOAA river name > station ID.
   String get displayName {
-    // 1. Custom name (highest priority)
-    if (customName != null && customName!.isNotEmpty) {
-      return customName!;
-    }
-    // 2. NOAA river name
-    if (riverName != null && riverName!.isNotEmpty) {
-      return riverName!;
-    }
-    // 3. Fallback to station ID
+    if (customName != null && customName!.isNotEmpty) return customName!;
+    if (riverName != null && riverName!.isNotEmpty) return riverName!;
     return 'Station $reachId';
   }
 
-  /// Check if flow data is stale (older than 2 hours)
   bool get isFlowDataStale {
     if (lastUpdated == null) return true;
     return DateTime.now().difference(lastUpdated!).inHours > 2;
   }
 
-  /// Get formatted flow display with proper unit conversion
-  /// CRITICAL FIX: Now uses stored unit information to prevent double conversion
-  String get formattedFlow {
+  /// Format flow for display using the provided conversion function.
+  ///
+  /// [convertFlow] converts a value from [fromUnit] to [toUnit].
+  /// [currentUnit] is the user's preferred display unit (e.g. "CFS").
+  String formattedFlow({
+    required double Function(double value, String fromUnit, String toUnit)
+        convertFlow,
+    required String currentUnit,
+  }) {
     if (lastKnownFlow == null) return 'No data';
 
-    final unitService = GetIt.I<IFlowUnitPreferenceService>();
-    final currentUnit = unitService.currentFlowUnit;
-
-    // CRITICAL FIX: Use stored unit if available, otherwise assume CFS for backward compatibility
     final actualStoredUnit = storedFlowUnit ?? 'CFS';
-
-    AppLogger.debug(
-      'FavoriteRiver',
-      'Converting flow for $reachId: $lastKnownFlow $actualStoredUnit -> $currentUnit',
-    );
-
-    // Convert from actual stored unit to user's preferred unit
-    final convertedFlow = unitService.convertFlow(
-      lastKnownFlow!,
-      actualStoredUnit, // FIXED: Use actual stored unit instead of assuming CFS
-      currentUnit,
-    );
-
-    return '${convertedFlow.toStringAsFixed(0)} $currentUnit';
+    final converted = convertFlow(lastKnownFlow!, actualStoredUnit, currentUnit);
+    return '${converted.toStringAsFixed(0)} $currentUnit';
   }
 
   @override
