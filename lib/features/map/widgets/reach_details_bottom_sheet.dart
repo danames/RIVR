@@ -1,12 +1,11 @@
 // lib/features/map/widgets/reach_details_bottom_sheet.dart
 
 import 'package:flutter/cupertino.dart';
-import '../../../core/services/error_service.dart';
 import '../../../core/services/app_logger.dart';
 import 'package:get_it/get_it.dart';
-import 'package:rivr/core/services/i_forecast_service.dart';
 import '../../../core/services/i_flow_unit_preference_service.dart';
 import '../../../core/constants.dart';
+import '../domain/usecases/get_reach_details_for_map_usecase.dart';
 import '../models/selected_reach.dart';
 import 'components/reach_action_buttons.dart';
 
@@ -32,7 +31,8 @@ class ReachDetailsBottomSheet extends StatefulWidget {
 }
 
 class _ReachDetailsBottomSheetState extends State<ReachDetailsBottomSheet> {
-  final IForecastService _forecastService = GetIt.I<IForecastService>();
+  final GetReachDetailsForMapUseCase _getReachDetails =
+      GetIt.I<GetReachDetailsForMapUseCase>();
 
   // Progressive loading states
   bool _isLoadingFlow = false;
@@ -473,7 +473,7 @@ class _ReachDetailsBottomSheetState extends State<ReachDetailsBottomSheet> {
     );
   }
 
-  /// Load all reach details via the consolidated service method
+  /// Load all reach details via the use case (returns ServiceResult).
   Future<void> _loadDataProgressively() async {
     setState(() {
       _isLoadingFlow = true;
@@ -481,49 +481,44 @@ class _ReachDetailsBottomSheetState extends State<ReachDetailsBottomSheet> {
       _errorMessage = null;
     });
 
-    try {
-      AppLogger.debug(
+    AppLogger.debug(
+      'ReachDetailsSheet',
+      'Loading details for: ${widget.selectedReach.reachId}',
+    );
+
+    final result = await _getReachDetails(widget.selectedReach.reachId);
+
+    if (_isCancelled || !mounted) return;
+
+    if (result.isFailure) {
+      AppLogger.error(
         'ReachDetailsSheet',
-        'Loading details for: ${widget.selectedReach.reachId}',
+        'Error loading details: ${result.exception?.technicalDetail}',
       );
-
-      final details = await _forecastService.loadReachDetailsData(
-        widget.selectedReach.reachId,
-      );
-
-      if (_isCancelled || !mounted) return;
-
       setState(() {
-        _riverName = details.riverName;
-        _formattedLocation = details.formattedLocation;
-        _currentFlow = details.currentFlow;
-        _flowCategory = details.flowCategory;
-        _latitude = details.latitude;
-        _longitude = details.longitude;
+        _errorMessage = result.errorMessage ?? 'Failed to load reach details';
         _isLoadingFlow = false;
         _isLoadingClassification = false;
       });
-
-      AppLogger.info(
-        'ReachDetailsSheet',
-        'Details loaded, flow: $_currentFlow, category: $_flowCategory',
-      );
-    } catch (error) {
-      if (_isCancelled) return;
-      AppLogger.error('ReachDetailsSheet', 'Error loading details', error);
-
-      final userMessage = ErrorService.handleError(
-        error,
-        context: 'loadReachDetails',
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = userMessage;
-        _isLoadingFlow = false;
-        _isLoadingClassification = false;
-      });
+      return;
     }
+
+    final details = result.data;
+    setState(() {
+      _riverName = details.riverName;
+      _formattedLocation = details.formattedLocation;
+      _currentFlow = details.currentFlow;
+      _flowCategory = details.flowCategory;
+      _latitude = details.latitude;
+      _longitude = details.longitude;
+      _isLoadingFlow = false;
+      _isLoadingClassification = false;
+    });
+
+    AppLogger.info(
+      'ReachDetailsSheet',
+      'Details loaded, flow: $_currentFlow, category: $_flowCategory',
+    );
   }
 
   Color _getFlowCategoryColor() {

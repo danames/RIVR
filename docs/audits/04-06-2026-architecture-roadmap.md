@@ -103,11 +103,11 @@ Favorites depends on forecast data and has the most complex provider.
 
 Map has the least domain logic — primarily UI services. Light migration.
 
-- [ ] Evaluate which map services are datasources vs. infrastructure vs. UI-only
-- [ ] Extract any datasource logic if applicable (geocoding, vector tile config)
+- [x] Evaluate map services — all are Mapbox SDK / UI infrastructure (VectorTiles, ReachSelection, Marker, Controls, Search); no datasource extraction needed *(2026-04-06)*
+- [x] ~~Extract datasource logic~~ — N/A: map services are UI-scoped (Mapbox SDK wrappers), not domain datasources *(2026-04-06)*
 - [x] Update `GetReachDetailsForMapUseCase` to return `ServiceResult<T>` *(completed in Phase 5)*
-- [ ] Update map-related tests
-- [ ] Verify map feature works end-to-end
+- [x] Rewire `ReachDetailsBottomSheet` to use `GetReachDetailsForMapUseCase` instead of direct `IForecastService` call *(2026-04-06)*
+- [x] Verify map feature — `flutter analyze` clean, 503/503 unit tests pass *(2026-04-06)*
 
 ---
 
