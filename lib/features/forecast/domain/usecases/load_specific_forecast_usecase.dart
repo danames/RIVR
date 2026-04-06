@@ -1,16 +1,16 @@
-// lib/features/forecast/domain/usecases/load_forecast_supplementary_usecase.dart
+// lib/features/forecast/domain/usecases/load_specific_forecast_usecase.dart
 
 import 'package:rivr/core/models/reach_data.dart';
 import 'package:rivr/core/services/service_result.dart';
 import '../repositories/i_forecast_repository.dart';
 
-class LoadForecastSupplementaryUseCase {
+class LoadSpecificForecastUseCase {
   final IForecastRepository _repository;
-  const LoadForecastSupplementaryUseCase(this._repository);
+  const LoadSpecificForecastUseCase(this._repository);
 
   Future<ServiceResult<ForecastResponse>> call(
     String reachId,
-    ForecastResponse existingData,
+    String forecastType,
   ) =>
-      _repository.loadSupplementary(reachId, existingData);
+      _repository.loadSpecificForecast(reachId, forecastType);
 }

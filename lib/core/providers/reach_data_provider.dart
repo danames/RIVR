@@ -5,15 +5,36 @@ import 'package:get_it/get_it.dart';
 import '../models/reach_data.dart';
 import '../services/app_logger.dart';
 import '../services/i_forecast_service.dart';
+import '../../features/forecast/domain/usecases/load_forecast_overview_usecase.dart';
+import '../../features/forecast/domain/usecases/load_forecast_supplementary_usecase.dart';
+import '../../features/forecast/domain/usecases/load_specific_forecast_usecase.dart';
+import '../../features/forecast/domain/usecases/load_complete_forecast_usecase.dart';
 import 'reach_data_cache_mixin.dart';
 
 /// State management for reach and forecast data
 /// Now with phased loading and progressive forecast category loading
 class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
   final IForecastService _forecastService;
+  final LoadForecastOverviewUseCase _loadOverview;
+  final LoadForecastSupplementaryUseCase _loadSupplementary;
+  final LoadSpecificForecastUseCase _loadSpecificForecast;
+  final LoadCompleteForecastUseCase _loadComplete;
 
-  ReachDataProvider({IForecastService? forecastService})
-      : _forecastService = forecastService ?? GetIt.I<IForecastService>();
+  ReachDataProvider({
+    IForecastService? forecastService,
+    LoadForecastOverviewUseCase? loadOverview,
+    LoadForecastSupplementaryUseCase? loadSupplementary,
+    LoadSpecificForecastUseCase? loadSpecificForecast,
+    LoadCompleteForecastUseCase? loadComplete,
+  })  : _forecastService = forecastService ?? GetIt.I<IForecastService>(),
+        _loadOverview =
+            loadOverview ?? GetIt.I<LoadForecastOverviewUseCase>(),
+        _loadSupplementary =
+            loadSupplementary ?? GetIt.I<LoadForecastSupplementaryUseCase>(),
+        _loadSpecificForecast =
+            loadSpecificForecast ?? GetIt.I<LoadSpecificForecastUseCase>(),
+        _loadComplete =
+            loadComplete ?? GetIt.I<LoadCompleteForecastUseCase>();
 
   // Mixin abstract getters
   @override
@@ -127,12 +148,19 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
         return true;
       }
 
-      // Load overview data from service (fast)
-      final forecast = await _forecastService.loadOverviewData(reachId);
+      // Load overview data via use case
+      final result = await _loadOverview(reachId);
 
       if (gen != _loadingGeneration) return false; // Stale — discard
 
-      _currentForecast = forecast;
+      if (result.isFailure) {
+        _setError(result.errorMessage ?? 'Failed to load overview');
+        _setLoadingOverview(false);
+        _setLoadingPhase('none');
+        return false;
+      }
+
+      _currentForecast = result.data;
       updateComputedCaches(reachId);
 
       _setLoadingOverview(false);
@@ -162,14 +190,20 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
         }
       }
 
-      // Load hourly data
-      final hourlyForecast = await _forecastService.loadSpecificForecast(
-        reachId,
-        'short_range',
-      );
+      // Load hourly data via use case
+      final result = await _loadSpecificForecast(reachId, 'short_range');
+
+      if (result.isFailure) {
+        AppLogger.error(
+          'ReachProvider',
+          'Error loading hourly forecast: ${result.errorMessage}',
+        );
+        _setLoadingHourly(false);
+        return false;
+      }
 
       // Merge with existing data instead of overwriting
-      _currentForecast = _mergeForecastData(_currentForecast!, hourlyForecast);
+      _currentForecast = _mergeForecastData(_currentForecast!, result.data);
       sessionCache[reachId] = _currentForecast!;
       updateComputedCaches(reachId);
 
@@ -196,14 +230,20 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
         }
       }
 
-      // Load daily data
-      final dailyForecast = await _forecastService.loadSpecificForecast(
-        reachId,
-        'medium_range',
-      );
+      // Load daily data via use case
+      final result = await _loadSpecificForecast(reachId, 'medium_range');
+
+      if (result.isFailure) {
+        AppLogger.error(
+          'ReachProvider',
+          'Error loading daily forecast: ${result.errorMessage}',
+        );
+        _setLoadingDaily(false);
+        return false;
+      }
 
       // Merge with existing data instead of overwriting
-      _currentForecast = _mergeForecastData(_currentForecast!, dailyForecast);
+      _currentForecast = _mergeForecastData(_currentForecast!, result.data);
       sessionCache[reachId] = _currentForecast!;
       updateComputedCaches(reachId);
 
@@ -230,16 +270,22 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
         }
       }
 
-      // Load extended data
-      final extendedForecast = await _forecastService.loadSpecificForecast(
-        reachId,
-        'long_range',
-      );
+      // Load extended data via use case
+      final result = await _loadSpecificForecast(reachId, 'long_range');
+
+      if (result.isFailure) {
+        AppLogger.error(
+          'ReachProvider',
+          'Error loading extended forecast: ${result.errorMessage}',
+        );
+        _setLoadingExtended(false);
+        return false;
+      }
 
       // Merge with existing data instead of overwriting
       _currentForecast = _mergeForecastData(
         _currentForecast!,
-        extendedForecast,
+        result.data,
       );
       sessionCache[reachId] = _currentForecast!;
       updateComputedCaches(reachId);
@@ -324,16 +370,21 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
     _clearError();
 
     try {
-      // Enhance existing data with supplementary information
-      final enhancedForecast = await _forecastService.loadSupplementaryData(
-        reachId,
-        _currentForecast!,
-      );
+      // Enhance existing data with supplementary information via use case
+      final result = await _loadSupplementary(reachId, _currentForecast!);
 
       if (gen != _loadingGeneration) return false; // Stale — discard
 
-      _currentForecast = enhancedForecast;
-      sessionCache[reachId] = enhancedForecast; // Update cache
+      if (result.isFailure) {
+        // Don't set error - supplementary data is not critical
+        // Keep existing overview data
+        _setLoadingSupplementary(false);
+        _setLoadingPhase('overview'); // Still have overview data
+        return false;
+      }
+
+      _currentForecast = result.data;
+      sessionCache[reachId] = result.data; // Update cache
 
       // Update computed caches
       updateComputedCaches(reachId);
@@ -370,13 +421,20 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
         return true;
       }
 
-      // Load from service (uses disk cache automatically)
-      final forecast = await _forecastService.loadCompleteReachData(reachId);
+      // Load from use case (uses disk cache automatically)
+      final result = await _loadComplete(reachId);
 
       if (gen != _loadingGeneration) return false; // Stale — discard
 
-      _currentForecast = forecast;
-      sessionCache[reachId] = forecast; // Cache for session
+      if (result.isFailure) {
+        _setError(result.errorMessage ?? 'Failed to load forecast data');
+        _setLoading(false);
+        _setLoadingPhase('none');
+        return false;
+      }
+
+      _currentForecast = result.data;
+      sessionCache[reachId] = result.data; // Cache for session
       updateComputedCaches(reachId);
 
       _setLoading(false);
@@ -398,13 +456,17 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
     _clearError();
 
     try {
-      final forecast = await _forecastService.loadSpecificForecast(
-        reachId,
-        forecastType,
-      );
+      final result = await _loadSpecificForecast(reachId, forecastType);
 
-      _currentForecast = forecast;
-      sessionCache[reachId] = forecast;
+      if (result.isFailure) {
+        _setError(result.errorMessage ?? 'Failed to load forecast');
+        _setLoading(false);
+        _setLoadingPhase('none');
+        return false;
+      }
+
+      _currentForecast = result.data;
+      sessionCache[reachId] = result.data;
       updateComputedCaches(reachId);
 
       _setLoading(false);
