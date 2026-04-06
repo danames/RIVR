@@ -10,13 +10,13 @@
 
 Establish the error handling pattern and shared infrastructure that every subsequent phase depends on.
 
-- [ ] Create `ServiceResult<T>` class with `success()`, `failure()`, `map()`, and `then()` methods
-- [ ] Create `ServiceException` class with `ServiceErrorType` enum (network, auth, validation, notFound, unknown, etc.)
-- [ ] Add `ServiceResult` unit tests (success, failure, map, chaining)
-- [ ] Migrate `Failure` types to work with or be replaced by `ServiceResult`
-- [ ] Create `models/1_domain/shared/entities/` directory and placeholder structure
-- [ ] Create `services/4_infrastructure/shared/` directory with `ServiceResult` and base classes
-- [ ] Decide on numbered folder convention (adopt or skip) and document the decision
+- [x] Create `ServiceResult<T>` class with `success()`, `failure()`, `map()`, and `then()` methods *(2026-04-06 10:30)*
+- [x] Create `ServiceException` class with `ServiceErrorType` enum (network, auth, validation, notFound, unknown, etc.) *(2026-04-06 10:30)*
+- [x] Add `ServiceResult` unit tests (success, failure, map, chaining) *(2026-04-06 10:35)*
+- [x] Migrate `Failure` types to work with or be replaced by `ServiceResult` *(2026-04-06 10:40)*
+- [x] Create `models/1_domain/shared/entities/` directory and placeholder structure *(2026-04-06 10:45)*
+- [x] Create `services/4_infrastructure/shared/` directory with `ServiceResult` and base classes *(2026-04-06 10:45)*
+- [x] Decide on numbered folder convention (adopt or skip) and document the decision — **adopted numbered folders** *(2026-04-06 10:45)*
 
 ---
 

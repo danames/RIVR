@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:rivr/core/services/noaa_api_service.dart';
+import 'package:rivr/core/services/service_result.dart';
 import 'package:rivr/core/services/i_flow_unit_preference_service.dart';
 
 /// Minimal stub for flow unit preference service.
@@ -171,7 +172,7 @@ void main() {
 
       await expectLater(
         service.fetchReachInfo('12345'),
-        throwsA(isA<ApiException>()),
+        throwsA(isA<ServiceException>()),
       );
       // 1 initial + 2 retries = 3 total attempts
       expect(callCount, 3);
@@ -193,7 +194,7 @@ void main() {
       // and fetchReachInfo throws because status != 200
       await expectLater(
         service.fetchReachInfo('12345'),
-        throwsA(isA<ApiException>()),
+        throwsA(isA<ServiceException>()),
       );
       expect(callCount, 3);
     });
@@ -212,7 +213,7 @@ void main() {
 
       await expectLater(
         service.fetchReachInfo('12345'),
-        throwsA(isA<ApiException>()),
+        throwsA(isA<ServiceException>()),
       );
       // Should NOT retry on 4xx — only 5xx triggers retry
       expect(callCount, 1);
@@ -232,7 +233,7 @@ void main() {
 
       await expectLater(
         service.fetchReachInfo('12345'),
-        throwsA(isA<ApiException>()),
+        throwsA(isA<ServiceException>()),
       );
       expect(callCount, 1);
     });
@@ -256,7 +257,7 @@ void main() {
         service.fetchReachInfo('12345').timeout(
           const Duration(seconds: 30),
         ),
-        throwsA(isA<ApiException>()),
+        throwsA(isA<ServiceException>()),
       );
       expect(callCount, 3);
     });

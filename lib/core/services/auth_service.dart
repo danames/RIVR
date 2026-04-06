@@ -8,6 +8,7 @@ import '../models/user_settings.dart';
 import 'app_logger.dart';
 import 'error_service.dart';
 import 'i_auth_service.dart';
+import 'service_result.dart';
 
 /// Simplified Firebase Auth wrapper service for RIVR
 /// Handles all authentication operations with proper error handling
@@ -483,4 +484,17 @@ class AuthResult {
     : isSuccess = false,
       user = null,
       message = null;
+}
+
+/// Bridge from [AuthResult] to [ServiceResult] for incremental migration.
+/// Auth use cases can wrap their return values during Phase 3 migration.
+extension AuthResultToServiceResult on AuthResult {
+  ServiceResult<User> toServiceResult() {
+    if (isSuccess && user != null) {
+      return ServiceResult.success(user!);
+    }
+    return ServiceResult.failure(
+      ServiceException.auth(error ?? 'Authentication failed'),
+    );
+  }
 }

@@ -6,9 +6,9 @@ import 'package:http/http.dart' as http;
 import '../config.dart';
 import '../models/reach_data.dart';
 import 'app_logger.dart';
-import 'error_service.dart';
 import 'i_flow_unit_preference_service.dart';
 import 'i_noaa_api_service.dart';
+import 'service_result.dart';
 
 /// Service for fetching data from NOAA APIs
 /// Integrates with existing AppConfig and ErrorService
@@ -136,11 +136,7 @@ class NoaaApiService implements INoaaApiService {
       }
     } catch (e) {
       AppLogger.error('NoaaApi', 'Error fetching reach info', e);
-      final userMessage = ErrorService.handleError(
-        e,
-        context: 'fetchReachInfo',
-      );
-      throw ApiException(userMessage);
+      throw ServiceException.fromError(e, context: 'fetchReachInfo');
     }
   }
 
@@ -290,8 +286,7 @@ class NoaaApiService implements INoaaApiService {
       }
     } catch (e) {
       AppLogger.error('NoaaApi', 'Error fetching $series forecast', e);
-      final userMessage = ErrorService.handleError(e, context: 'fetchForecast');
-      throw ApiException(userMessage);
+      throw ServiceException.fromError(e, context: 'fetchForecast');
     }
   }
 
@@ -381,8 +376,9 @@ class NoaaApiService implements INoaaApiService {
 
     // Check if we got at least one forecast
     if (combinedResponse == null) {
-      throw ApiException(
-        'No forecast data available for reach $reachId. All forecast types failed.',
+      throw const ServiceException.notFound(
+        'No forecast data available. All forecast types failed.',
+        detail: 'fetchAllForecasts: combinedResponse was null after all attempts',
       );
     }
 
@@ -562,10 +558,16 @@ class NoaaApiService implements INoaaApiService {
   }
 }
 
-/// Custom exception for API errors
-class ApiException implements Exception {
-  final String message;
-  const ApiException(this.message);
+/// Deprecated — use [ServiceException] directly.
+/// Kept as a subclass so existing `catch (ApiException)` and `isA<ApiException>()`
+/// in tests continue to work during migration.
+@Deprecated('Use ServiceException instead. Will be removed in Phase 8.')
+class ApiException extends ServiceException {
+  const ApiException(String message)
+      : super(
+          type: ServiceErrorType.network,
+          message: message,
+        );
 
   @override
   String toString() => 'ApiException: $message';
