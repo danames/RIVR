@@ -115,24 +115,24 @@ Map has the least domain logic — primarily UI services. Light migration.
 
 Move files into the `models/` + `services/` + `ui/` layout. Do this as a single atomic operation per layer.
 
-- [ ] Create target directory structure (`models/`, `services/`, `ui/`, `utils/`)
-- [ ] Move domain entities to `models/1_domain/shared/entities/` and `models/1_domain/features/`
-- [ ] Move use cases to `models/2_usecases/features/`
-- [ ] Move config to `services/0_config/shared/`
-- [ ] Move repository interfaces to `services/1_contracts/features/`
-- [ ] Move coordinators to `services/2_coordinators/features/`
-- [ ] Move datasources to `services/3_datasources/features/`
-- [ ] Move infrastructure services to `services/4_infrastructure/` (grouped by technical domain)
-- [ ] Move DI to `services/5_injection/`
-- [ ] Move providers to `ui/1_state/`
-- [ ] Move pages and widgets to `ui/2_presentation/`
-- [ ] Move routing to `ui/2_presentation/routing/`
-- [ ] Move shared widgets to `ui/2_presentation/shared/`
-- [ ] Move utils to `utils/`
-- [ ] Fix all import paths (use IDE refactoring)
-- [ ] Update test file locations to mirror new structure
-- [ ] Run `flutter analyze` — zero issues
-- [ ] Run `flutter test` — all tests pass
+- [x] Create target directory structure (`models/`, `services/`, `ui/`, `utils/`) *(2026-04-06)*
+- [x] Move domain entities to `models/1_domain/shared/` and `models/1_domain/features/` *(2026-04-06)*
+- [x] Move use cases to `models/2_usecases/features/` *(2026-04-06)*
+- [x] Move config to `services/0_config/shared/` *(2026-04-06)*
+- [x] Move repository interfaces to `services/1_contracts/features/` *(2026-04-06)*
+- [x] Move coordinators to `services/2_coordinators/features/` *(2026-04-06)*
+- [x] Move datasources to `services/3_datasources/features/` *(2026-04-06)*
+- [x] Move infrastructure services to `services/4_infrastructure/` (grouped by technical domain) *(2026-04-06)*
+- [x] Move DI to `services/5_injection/` *(2026-04-06)*
+- [x] Move providers to `ui/1_state/` *(2026-04-06)*
+- [x] Move pages and widgets to `ui/2_presentation/` *(2026-04-06)*
+- [x] Move routing to `ui/2_presentation/routing/` *(2026-04-06)*
+- [x] Move shared widgets to `ui/2_presentation/shared/` *(2026-04-06)*
+- [x] Move utils to `utils/` *(2026-04-06)*
+- [x] Fix all import paths (scripted: Python relative→absolute + sed bulk replacement + bare-filename resolution) *(2026-04-06)*
+- [x] Update test file locations to mirror new structure (27 test files moved) *(2026-04-06)*
+- [x] Run `flutter analyze` — zero issues *(2026-04-06)*
+- [x] Run `flutter test` — 503/503 unit tests pass (25 pre-existing integration test failures unchanged) *(2026-04-06)*
 
 ---
 

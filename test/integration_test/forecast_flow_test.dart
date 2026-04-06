@@ -11,8 +11,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:rivr/features/forecast/pages/reach_overview_page.dart';
-import 'package:rivr/core/providers/reach_data_provider.dart';
+import 'package:rivr/ui/2_presentation/features/forecast/pages/reach_overview_page.dart';
+import 'package:rivr/ui/1_state/features/forecast/reach_data_provider.dart';
 
 import 'helpers/test_app.dart';
 

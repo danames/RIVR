@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
-import 'package:rivr/core/providers/favorites_provider.dart';
-import 'package:rivr/core/providers/reach_data_provider.dart';
-import 'package:rivr/core/services/flow_unit_preference_service.dart';
-import 'package:rivr/core/services/i_flow_unit_preference_service.dart';
-import 'package:rivr/features/auth/providers/auth_provider.dart';
+import 'package:rivr/ui/1_state/features/favorites/favorites_provider.dart';
+import 'package:rivr/ui/1_state/features/forecast/reach_data_provider.dart';
+import 'package:rivr/services/4_infrastructure/shared/flow_unit_preference_service.dart';
+import 'package:rivr/services/1_contracts/shared/i_flow_unit_preference_service.dart';
+import 'package:rivr/ui/1_state/features/auth/auth_provider.dart';
 
 /// Sets up GetIt service locator for tests.
 /// Call in setUpAll() and pair with tearDownServiceLocator() in tearDownAll().

@@ -6,12 +6,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:rivr/features/auth/presentation/pages/auth_wrapper.dart';
-import 'package:rivr/features/auth/presentation/pages/login_page.dart';
-import 'package:rivr/features/auth/presentation/pages/register_page.dart';
-import 'package:rivr/features/auth/presentation/pages/forgot_password_page.dart';
-import 'package:rivr/features/auth/presentation/pages/email_verification_page.dart';
-import 'package:rivr/features/auth/providers/auth_provider.dart';
+import 'package:rivr/ui/2_presentation/features/auth/pages/auth_wrapper.dart';
+import 'package:rivr/ui/2_presentation/features/auth/pages/login_page.dart';
+import 'package:rivr/ui/2_presentation/features/auth/pages/register_page.dart';
+import 'package:rivr/ui/2_presentation/features/auth/pages/forgot_password_page.dart';
+import 'package:rivr/ui/2_presentation/features/auth/pages/email_verification_page.dart';
+import 'package:rivr/ui/1_state/features/auth/auth_provider.dart';
 
 import 'helpers/test_app.dart';
 

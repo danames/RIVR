@@ -12,10 +12,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
-import 'package:rivr/features/favorites/favorites_page.dart';
-import 'package:rivr/features/favorites/widgets/favorite_river_card.dart';
-import 'package:rivr/features/auth/providers/auth_provider.dart';
-import 'package:rivr/core/providers/favorites_provider.dart';
+import 'package:rivr/ui/2_presentation/features/favorites/pages/favorites_page.dart';
+import 'package:rivr/ui/2_presentation/features/favorites/widgets/favorite_river_card.dart';
+import 'package:rivr/ui/1_state/features/auth/auth_provider.dart';
+import 'package:rivr/ui/1_state/features/favorites/favorites_provider.dart';
 
 import 'helpers/test_app.dart';
 import 'helpers/mock_services.dart';

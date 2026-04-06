@@ -14,40 +14,69 @@ River flow monitoring and flood risk assessment mobile app. Democratizes access 
 
 ## Architecture
 
-Feature-based modular architecture with a shared core layer:
+Layer-first architecture with numbered subfolders (Models → Services → UI):
 
 ```
 lib/
-  main.dart                     -- Entry point, MultiProvider setup, CupertinoApp routing
-  firebase_options.dart         -- Auto-generated Firebase config (gitignored)
-  core/                         -- Shared infrastructure
-    config.dart                 -- API keys and URLs (gitignored, use config.template.dart)
-    constants.dart              -- Forecast definitions, color/icon helpers
-    models/                     -- ReachData, FavoriteRiver, UserSettings
-    providers/                  -- FavoritesProvider, ReachDataProvider, ThemeProvider
-    services/                   -- AuthService, ForecastService, NoaaApiService, FCMService, etc.
-    routing/                    -- Auth guard for route protection
-    widgets/                    -- Shared widgets (NavigationButton)
-    utils/                      -- Shared utilities
-  features/
-    auth/                       -- Authentication (presentation/pages, presentation/widgets, providers, services, models)
-    favorites/                  -- Favorites management (app home screen, pages, widgets, services)
-    forecast/                   -- Flow forecasting (domain/entities, pages, services, utils, complex widget hierarchy)
-    map/                        -- Interactive Mapbox map (models, services, widgets/components)
-    settings/                   -- User preferences (pages, widgets)
-functions/                      -- Firebase Cloud Functions (TypeScript)
-  src/index.ts                  -- Cloud Function entry points
-  src/notification-service.ts   -- Push notification logic
-  src/noaa-client.ts            -- Server-side NOAA API client
+  main.dart                              -- Entry point, MultiProvider setup, CupertinoApp routing
+  firebase_options.dart                  -- Auto-generated Firebase config (gitignored)
+  models/
+    1_domain/
+      shared/                            -- Core entities (ReachData, FavoriteRiver, UserSettings, etc.)
+      features/{auth,forecast,map}/      -- Feature-specific entities
+    2_usecases/
+      shared/                            -- BaseUseCase
+      features/{auth,favorites,forecast,map,settings}/  -- Use cases by feature
+  services/
+    0_config/shared/                     -- config.dart (gitignored), constants.dart
+    1_contracts/
+      shared/                            -- Service interfaces (i_*.dart)
+      features/{auth,favorites,forecast,settings}/  -- Repository interfaces
+    2_coordinators/features/             -- Repository implementations (error-mapping coordinators)
+    3_datasources/
+      shared/dtos/                       -- DTOs (ReachDataDto, FavoriteRiverDto, UserSettingsDto)
+      features/{auth,settings}/          -- Datasource classes
+    4_infrastructure/                    -- Service implementations by technical domain
+      api/                               -- NoaaApiService
+      auth/                              -- AuthService
+      cache/                             -- CacheService, ReachCacheService
+      favorites/                         -- FavoritesService, CoachMarkService
+      fcm/                               -- FCMService
+      forecast/                          -- ForecastService, DailyForecastProcessor
+      geo/                               -- GeocodingService
+      logging/                           -- AppLogger
+      map/                               -- Map services (6 files)
+      media/                             -- BackgroundImageService
+      network/                           -- ConnectivityService
+      onboarding/                        -- OnboardingService
+      settings/                          -- UserSettingsService
+      shared/                            -- ErrorService, ServiceResult, AnalyticsService
+    5_injection/                         -- service_locator.dart (GetIt DI)
+  ui/
+    1_state/
+      shared/                            -- ConnectivityProvider
+      features/{auth,favorites,forecast}/ -- Providers (ChangeNotifier)
+    2_presentation/
+      routing/                           -- AppRouter, AuthGuard, routes
+      shared/{pages,widgets}/            -- Shared UI components
+      features/{auth,favorites,forecast,map,onboarding,settings}/  -- Pages + widgets
+  utils/                                 -- Utilities (river_image, email_validator, etc.)
+functions/                               -- Firebase Cloud Functions (TypeScript)
+  src/index.ts                           -- Cloud Function entry points
+  src/notification-service.ts            -- Push notification logic
+  src/noaa-client.ts                     -- Server-side NOAA API client
 ```
 
 ### Key Patterns
 
-- **Singleton services:** Factory constructor + private `_internal()` (e.g., AuthService, NoaaApiService)
+- **Layer-first structure:** `models/` (entities + use cases) → `services/` (contracts + coordinators + datasources + infrastructure + DI) → `ui/` (state + presentation)
+- **ServiceResult pattern:** All use cases return `ServiceResult<T>` for structured error handling
+- **Coordinator pattern:** Repository implementations map raw errors to `ServiceResult` failures
+- **Entity/DTO separation:** Pure domain entities in `models/1_domain/`, DTOs with serialization in `services/3_datasources/`
 - **Provider pattern:** Providers extend ChangeNotifier, registered in main.dart via MultiProvider
-- **Service layer:** Providers manage state; services handle I/O and business logic
 - **Phased data loading:** ForecastService uses loadOverviewData -> loadSupplementaryData -> loadCompleteReachData
 - **Unit conversion:** All forecast data converted at the API layer (NoaaApiService) before reaching UI
+- **DI:** GetIt service locator in `services/5_injection/service_locator.dart`
 
 ## Git Workflow
 
@@ -124,8 +153,8 @@ git push origin main
 - Tests: `*_test.dart` suffix
 
 ### Imports
-- Cross-feature: `package:rivr/...` (full package imports)
-- Within same feature: relative imports (`../services/auth_service.dart`)
+- Always use absolute imports: `package:rivr/...` (full package imports)
+- No relative imports (all converted to absolute during Phase 8 restructure)
 
 ### Debug Logging
 - Service-specific prefixes: `'NOAA_API:'`, `'AUTH_PROVIDER:'`, `'FORECAST_SERVICE:'`, `'CACHE_SERVICE:'`
@@ -137,22 +166,27 @@ Tests mirror the `lib/` directory structure:
 
 ```
 test/
-  core/
-    models/         -- Unit tests for data models
-    providers/      -- Unit tests for providers
-    services/       -- Unit tests for services
-    routing/        -- Tests for auth guard
-    widgets/        -- Widget tests for shared widgets
-  features/
-    auth/           -- Mirrors lib/features/auth/ structure
-    favorites/      -- Mirrors lib/features/favorites/ structure
-    forecast/       -- Mirrors lib/features/forecast/ structure
-    map/            -- Mirrors lib/features/map/ structure
-    settings/       -- Mirrors lib/features/settings/ structure
+  models/1_domain/shared/           -- Entity unit tests (ReachData, FavoriteRiver, UserSettings)
+  services/
+    2_coordinators/features/         -- Repository impl tests (auth, favorites, forecast, settings)
+    3_datasources/
+      shared/dtos/                   -- DTO tests
+      features/settings/             -- Settings datasource tests
+    4_infrastructure/
+      api/                           -- NoaaApiService tests
+      cache/                         -- ReachCacheService tests
+      favorites/                     -- CoachMark tests
+      fcm/                           -- FCMService tests
+      forecast/                      -- DailyForecastProcessor tests
+      shared/                        -- ErrorService, ServiceResult, FlowUnitPref tests
+  ui/
+    1_state/features/auth/           -- AuthProvider tests
+    2_presentation/features/         -- Widget tests
+  utils/                             -- Utility tests
   helpers/
-    test_helpers.dart   -- pumpApp() wrapper with mock providers
-    fake_data.dart      -- Factory methods for test data
-integration_test/       -- End-to-end integration tests
+    test_helpers.dart                -- pumpApp() wrapper with mock providers
+    fake_data.dart                   -- Factory methods for test data
+  integration_test/                  -- End-to-end integration tests
 ```
 
 ### Test Priority
@@ -164,27 +198,30 @@ integration_test/       -- End-to-end integration tests
 
 ### Running Tests
 ```bash
-flutter test                          # All unit and widget tests
-flutter test test/core/models/        # Just model tests
-flutter test --coverage               # With coverage report
-flutter test integration_test/        # Integration tests
+flutter test                                    # All unit and widget tests
+flutter test test/models/                       # Just model tests
+flutter test test/services/4_infrastructure/    # Infrastructure service tests
+flutter test --coverage                         # With coverage report
+flutter test integration_test/                  # Integration tests
 ```
 
 ## Key File Paths
 
 | File | Purpose |
 |------|---------|
-| `lib/main.dart` | App entry point, provider registration, route definitions |
-| `lib/core/config.dart` | API keys and URLs (**gitignored** -- create from config.template.dart) |
-| `lib/core/constants.dart` | Non-sensitive constants, forecast definitions |
-| `lib/core/models/reach_data.dart` | Core data model for river reaches (800+ lines, parsing/conversion) |
-| `lib/core/services/forecast_service.dart` | Central forecast loading, caching, phased loading |
-| `lib/core/services/noaa_api_service.dart` | All NOAA API calls with unit conversion |
-| `lib/core/providers/favorites_provider.dart` | Primary state management for favorites |
-| `lib/features/auth/providers/auth_provider.dart` | Authentication state |
-| `lib/core/services/auth_service.dart` | Firebase Auth + biometric auth wrapper |
-| `lib/core/services/fcm_service.dart` | Firebase Cloud Messaging token management |
-| `lib/features/map/map_page.dart` | Mapbox map integration |
+| `lib/main.dart` | App entry point, provider registration, CupertinoApp routing |
+| `lib/services/0_config/shared/config.dart` | API keys and URLs (**gitignored** -- create from config.template.dart) |
+| `lib/services/0_config/shared/constants.dart` | Non-sensitive constants, forecast definitions |
+| `lib/models/1_domain/shared/reach_data.dart` | Core entity for river reaches (800+ lines) |
+| `lib/services/3_datasources/shared/dtos/reach_data_dto.dart` | ReachData DTO with NOAA API parsing/serialization |
+| `lib/services/4_infrastructure/forecast/forecast_service.dart` | Central forecast loading, caching, phased loading |
+| `lib/services/4_infrastructure/api/noaa_api_service.dart` | All NOAA API calls with unit conversion |
+| `lib/ui/1_state/features/favorites/favorites_provider.dart` | Primary state management for favorites |
+| `lib/ui/1_state/features/auth/auth_provider.dart` | Authentication state |
+| `lib/services/4_infrastructure/auth/auth_service.dart` | Firebase Auth + biometric auth wrapper |
+| `lib/services/4_infrastructure/fcm/fcm_service.dart` | Firebase Cloud Messaging token management |
+| `lib/services/5_injection/service_locator.dart` | GetIt dependency injection setup |
+| `lib/ui/2_presentation/features/map/pages/map_page.dart` | Mapbox map integration |
 | `lib/firebase_options.dart` | Firebase config (**gitignored**) |
 | `functions/src/index.ts` | Cloud Functions entry point |
 | `.firebaserc` | Firebase project ID (ciroh-rivr-app) |
@@ -196,7 +233,7 @@ The following files contain secrets and are **gitignored**:
 
 | File | Contains |
 |------|----------|
-| `lib/core/config.dart` | Mapbox token, NWM API URLs, vector tileset IDs |
+| `lib/services/0_config/shared/config.dart` | Mapbox token, NWM API URLs, vector tileset IDs |
 | `lib/firebase_options.dart` | Firebase project keys (auto-generated) |
 | `android/app/google-services.json` | Android Firebase config |
 | `ios/Runner/GoogleService-Info.plist` | iOS Firebase config |
@@ -216,7 +253,7 @@ To set up signing on a new machine:
 1. Download `rivr-upload-keystore.jks` from the Google Drive folder above
 2. Create `android/key.properties` with the credentials from `rivr-keystore-credentials.txt`
 
-Use `lib/core/config.template.dart` and `android/local.properties.template` as references when setting up a new environment.
+Use `lib/services/0_config/shared/config.template.dart` and `android/local.properties.template` as references when setting up a new environment.
 
 ## Build & Run
 

@@ -11,8 +11,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:rivr/features/auth/presentation/pages/auth_wrapper.dart';
-import 'package:rivr/features/auth/presentation/pages/login_page.dart';
+import 'package:rivr/ui/2_presentation/features/auth/pages/auth_wrapper.dart';
+import 'package:rivr/ui/2_presentation/features/auth/pages/login_page.dart';
 
 import 'helpers/test_app.dart';
 

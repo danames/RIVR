@@ -45,7 +45,7 @@ app.*.map.json
 /android/app/release
 
 # Configuration files with sensitive API keys
-lib/core/config.dart
+lib/services/0_config/shared/config.dart
 
 # Firebase configuration files with API keys
 lib/firebase_options.dart
