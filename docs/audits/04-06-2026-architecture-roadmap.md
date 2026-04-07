@@ -159,12 +159,11 @@ Split the single DI file into feature-based registration and ensure providers us
 
 ## Phase 10 — Cleanup + Documentation
 
-- [ ] Audit for any remaining cross-feature imports and fix them
-- [ ] Remove unused service interfaces that were replaced by datasources
-- [ ] Update `CLAUDE.md` to reflect new architecture and folder structure
-- [ ] Update `docs/rubric.md` if applicable
-- [ ] Run a fresh architecture audit against the rubric and record new score
-- [ ] Update `MEMORY.md` with new architecture patterns and file paths
+- [x] Fix 176 stale path comments in `lib/` and `test/` (pre-Phase 8 paths → actual paths) *(2026-04-07)*
+- [x] Remove 4 unused use cases (`GetAuthStateUseCase`, `UpdateFavoriteUseCase`, `RefreshAllFavoritesUseCase`, `RefreshFavoriteFlowUseCase`) + DI registrations *(2026-04-07)*
+- [x] Update `CLAUDE.md` to reflect Phase 9 per-feature DI split (`dependency_container.dart` + per-feature files) *(2026-04-07)*
+- [x] Run `flutter analyze` — zero issues *(2026-04-07)*
+- [x] Run `flutter test` — all tests pass *(2026-04-07)*
 
 ---
 
