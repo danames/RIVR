@@ -10,7 +10,6 @@ import 'package:rivr/models/2_usecases/features/auth/sign_in_usecase.dart';
 import 'package:rivr/models/2_usecases/features/auth/sign_up_usecase.dart';
 import 'package:rivr/models/2_usecases/features/auth/sign_out_usecase.dart';
 import 'package:rivr/models/2_usecases/features/auth/reset_password_usecase.dart';
-import 'package:rivr/models/2_usecases/features/auth/get_auth_state_usecase.dart';
 import 'package:rivr/models/2_usecases/features/auth/sign_in_with_biometrics_usecase.dart';
 import 'package:rivr/models/2_usecases/features/auth/enable_biometric_usecase.dart';
 import 'package:rivr/models/2_usecases/features/auth/disable_biometric_usecase.dart';
@@ -48,7 +47,6 @@ void setupAuthDependencies() {
   sl.registerFactory(() => SignUpUseCase(sl<IAuthRepository>()));
   sl.registerFactory(() => SignOutUseCase(sl<IAuthRepository>()));
   sl.registerFactory(() => ResetPasswordUseCase(sl<IAuthRepository>()));
-  sl.registerFactory(() => GetAuthStateUseCase(sl<IAuthRepository>()));
   sl.registerFactory(() => SignInWithBiometricsUseCase(sl<IAuthRepository>()));
   sl.registerFactory(() => EnableBiometricUseCase(sl<IAuthRepository>()));
   sl.registerFactory(() => DisableBiometricUseCase(sl<IAuthRepository>()));

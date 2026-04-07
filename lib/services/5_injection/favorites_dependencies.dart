@@ -12,10 +12,7 @@ import 'package:rivr/services/2_coordinators/features/favorites/favorites_reposi
 import 'package:rivr/models/2_usecases/features/favorites/initialize_favorites_usecase.dart';
 import 'package:rivr/models/2_usecases/features/favorites/add_favorite_usecase.dart';
 import 'package:rivr/models/2_usecases/features/favorites/remove_favorite_usecase.dart';
-import 'package:rivr/models/2_usecases/features/favorites/update_favorite_usecase.dart';
 import 'package:rivr/models/2_usecases/features/favorites/reorder_favorites_usecase.dart';
-import 'package:rivr/models/2_usecases/features/favorites/refresh_all_favorites_usecase.dart';
-import 'package:rivr/models/2_usecases/features/favorites/refresh_favorite_flow_usecase.dart';
 import 'package:rivr/models/2_usecases/features/favorites/get_favorite_flow_usecase.dart';
 
 void setupFavoritesDependencies() {
@@ -45,9 +42,6 @@ void setupFavoritesDependencies() {
   sl.registerFactory(() => InitializeFavoritesUseCase(sl<IFavoritesRepository>()));
   sl.registerFactory(() => AddFavoriteUseCase(sl<IFavoritesRepository>()));
   sl.registerFactory(() => RemoveFavoriteUseCase(sl<IFavoritesRepository>()));
-  sl.registerFactory(() => UpdateFavoriteUseCase(sl<IFavoritesRepository>()));
   sl.registerFactory(() => ReorderFavoritesUseCase(sl<IFavoritesRepository>()));
-  sl.registerFactory(() => RefreshAllFavoritesUseCase(sl<IFavoritesRepository>()));
-  sl.registerFactory(() => RefreshFavoriteFlowUseCase(sl<IFavoritesRepository>()));
   sl.registerFactory(() => GetFavoriteFlowUseCase(sl<IFavoritesRepository>()));
 }
