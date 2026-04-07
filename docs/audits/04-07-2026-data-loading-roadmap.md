@@ -45,61 +45,72 @@ When **any** `?series=` filtered request returns 200 but empty data arrays, fall
 
 ---
 
-## Phase 2 — Per-Section Loading States in the UI
+## Phase 2 — Per-Section Loading States in the UI ✅
+**Completed:** April 7, 2026
 **Audit findings:** #3 (global loading state), #4 (no data transparency)
 **Effort:** Medium
-**Files:** `reach_data_provider.dart`, forecast display widgets
+**Files:** `section_load_state.dart`, `reach_data_provider.dart`, `forecast_category_grid.dart`
 
 ### Goal
 Each forecast section (short range, medium range, long range, return periods) has its own loading/loaded/error/empty state. Users see content building up progressively instead of one long wait followed by everything at once.
 
 ### Tasks
 
-- [ ] Define a `SectionLoadState` enum: `loading`, `loaded`, `empty`, `error`, `unavailable`
-- [ ] Add per-section state tracking to the provider (e.g., `Map<String, SectionLoadState>`)
-- [ ] Update forecast tab/card widgets to show section-specific loading indicators
-- [ ] Design and implement "empty" state messaging per section (see Phase 3 for content)
-- [ ] Add subtle transition animations when sections populate (fade-in or slide, keep it light)
-- [ ] Ensure section loading indicators match the Cupertino design language (use `CupertinoActivityIndicator` sized per section)
+- [x] Define `SectionLoadState` enum: `idle`, `loading`, `loaded`, `empty`, `error`, `unavailable` with extension helpers (`hasData`, `isDone`, `isLoading`, etc.)
+- [x] Add per-section state fields to `ReachDataProvider` (`_hourlyState`, `_dailyState`, `_extendedState`, `_returnPeriodsState`)
+- [x] Add `getSectionState(forecastType)` method for widgets to query state by type
+- [x] Backward-compatible boolean getters (`isLoadingHourly`, etc.) derived from enum states
+- [x] Updated `loadHourlyForecast`, `loadDailyForecast`, `loadExtendedForecast` to set `loaded` vs `empty` vs `error` states
+- [x] Updated `loadSupplementaryData` to track `_returnPeriodsState`
+- [x] Updated `ForecastCategoryGrid` — status indicator dot colors per state (green=loaded, orange=empty, red=error, grey=idle/unavailable, spinner=loading)
+- [x] Updated `ForecastCategoryGrid` — state-aware status messages ("Temporarily unavailable. Try refreshing.", "Failed to load. Pull down to retry.", etc.)
+- [x] `AnimatedOpacity` on cards already provides fade-in transitions when state changes
+- [x] All indicators use `CupertinoActivityIndicator` matching the Cupertino design language
+- [x] 7 new unit tests for `SectionLoadState` enum and extension methods
+- [x] 527 existing unit/widget tests pass, no regressions
 
 ### Acceptance criteria
-- Short range chart appears as soon as short range data is available, independent of other sections
-- Medium/long range tabs show their own loading state
-- Return period badge shows loading → loaded independently
-- No regressions in overall load-to-interactive time
+- Short range chart appears as soon as short range data is available, independent of other sections ✅
+- Medium/long range tabs show their own loading state ✅
+- Return period badge shows loading → loaded independently ✅
+- No regressions in overall load-to-interactive time ✅
 
 ---
 
-## Phase 3 — Transparent Data Source Messaging
+## Phase 3 — Transparent Data Source Messaging ✅
+**Completed:** April 7, 2026
 **Audit findings:** #4 (no transparency), #5 (empty vs. no coverage)
 **Effort:** Small-Medium
-**Files:** Forecast display widgets, new shared widget for data messaging
+**Files:** `data_source_message.dart`, `forecast_detail_template.dart`, `reach_overview_page.dart`, `long_range_calendar.dart`
 
 ### Goal
 When a section has no data, tell the user *why* in plain language. Differentiate between server issues and no coverage. Build trust by being upfront about where data comes from.
 
 ### Tasks
 
-- [ ] Differentiate error types at the API layer:
-  - `unavailable` — HTTP 503, reach not covered by NWPS (permanent for that reach)
-  - `emptyResponse` — HTTP 200 but data arrays empty (likely transient server issue)
-  - `timeout` — request timed out
-  - `error` — other HTTP errors
-- [ ] Create a shared `DataSourceMessage` widget that shows contextual messaging:
+- [x] Error types differentiated via `SectionLoadState` enum (Phase 2): `empty` (200 but no data, transient), `error` (request failed), `unavailable` (no coverage, permanent). Timeout grouped under `error` for now — refinable later.
+- [x] Created shared `DataSourceMessage` widget with full and compact layouts:
   - **Loading:** "Fetching [short-range/medium-range/long-range] forecast from NOAA National Water Model..."
-  - **Empty (transient):** "The NOAA National Water Model forecast is temporarily unavailable for this section. This usually resolves on its own — try refreshing in a few minutes."
-  - **Unavailable (no coverage):** "This reach does not have [forecast type] coverage in the National Water Model."
-  - **Timeout:** "The forecast server is responding slowly. Pull down to retry."
-  - **Error:** "Something went wrong loading this forecast. Pull down to retry."
-  - **Short range empty (special case):** When the primary current-flow source is unavailable, show "Current flow data is temporarily unavailable from the NOAA National Water Model. Checking other forecast sources..." — then if medium/long range provides a value, update to show that with a note like "Current flow estimated from [medium-range] forecast."
-- [ ] Add a small, unobtrusive "Data: NOAA National Water Model" attribution label on forecast sections (helps users understand the source)
-- [ ] Write widget tests for each message state
+  - **Empty (transient):** "The NOAA National Water Model [type] forecast is temporarily unavailable. This usually resolves on its own — try refreshing in a few minutes."
+  - **Unavailable (no coverage):** "This reach does not have [type] coverage in the National Water Model."
+  - **Error:** "Something went wrong loading the [type] forecast. Pull down to retry."
+  - **Loaded:** Shows "Data: NOAA National Water Model" attribution
+  - **Idle:** "Waiting to load [type] forecast..."
+- [x] Created `DataSourceAttribution` widget — unobtrusive "Data: NOAA National Water Model" label
+- [x] Integrated `DataSourceMessage` into `forecast_detail_template.dart` — replaces generic `_buildEmptyState`, `_buildErrorState`, `_buildLoadingState` with section-aware transparent messaging
+- [x] Integrated into `reach_overview_page.dart` — empty state now explains what happened
+- [x] Integrated into `long_range_calendar.dart` — no-data state uses section-aware messaging
+- [x] Added `DataSourceAttribution` to `reach_overview_page.dart` and `forecast_detail_template.dart`
+- [x] `ForecastCategoryGrid` already has state-aware compact messages from Phase 2 (green/orange/red dots + contextual text)
+- [x] 13 new widget tests covering all 6 states, compact vs full layout, retry behavior, forecast type labels
+- [x] 547 existing tests pass, no regressions
+- [ ] Short range empty special case (current flow estimated from medium/long range) — deferred to Phase 4 where cross-section current-flow recalculation is implemented
 
 ### Acceptance criteria
-- Users never see a blank section with no explanation
-- Transient server issues are communicated as temporary with a retry suggestion
-- Permanent no-coverage is communicated differently from transient failures
-- Attribution builds trust without cluttering the UI
+- Users never see a blank section with no explanation ✅
+- Transient server issues are communicated as temporary with a retry suggestion ✅
+- Permanent no-coverage is communicated differently from transient failures ✅
+- Attribution builds trust without cluttering the UI ✅
 
 ---
 

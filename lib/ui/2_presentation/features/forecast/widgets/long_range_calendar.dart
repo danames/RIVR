@@ -4,10 +4,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:rivr/services/4_infrastructure/logging/app_logger.dart';
 import 'package:rivr/ui/1_state/features/forecast/reach_data_provider.dart';
+import 'package:rivr/ui/1_state/shared/section_load_state.dart';
 import 'package:rivr/models/1_domain/features/forecast/daily_flow_forecast.dart';
 import 'package:rivr/services/4_infrastructure/forecast/daily_forecast_processor.dart';
 import 'package:rivr/ui/2_presentation/features/forecast/widgets/calendar_day_cell.dart';
 import 'package:rivr/ui/2_presentation/features/forecast/widgets/calendar_day_detail_sheet.dart';
+import 'package:rivr/ui/2_presentation/shared/widgets/data_source_message.dart';
 
 /// Calendar widget that displays long range flow forecasts in a monthly grid layout
 ///
@@ -439,40 +441,20 @@ class _LongRangeCalendarState extends State<LongRangeCalendar> {
     );
   }
 
-  /// Build no data state
+  /// Build no data state with transparent messaging
   Widget _buildNoDataState() {
+    final reachProvider = Provider.of<ReachDataProvider>(
+      context,
+      listen: false,
+    );
+    final sectionState = reachProvider.getSectionState('long_range');
+
     return Container(
       height: widget.height ?? 400,
       padding: widget.padding ?? const EdgeInsets.all(16),
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              CupertinoIcons.calendar,
-              size: 48,
-              color: CupertinoColors.systemGrey,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'No calendar data available',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: CupertinoColors.secondaryLabel,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Long range forecast data is not available for this reach.',
-              style: TextStyle(
-                fontSize: 14,
-                color: CupertinoColors.tertiaryLabel,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+      child: DataSourceMessage(
+        state: sectionState.isDone ? sectionState : SectionLoadState.empty,
+        forecastType: 'long_range',
       ),
     );
   }

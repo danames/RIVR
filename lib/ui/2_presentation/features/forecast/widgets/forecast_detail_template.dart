@@ -8,9 +8,11 @@ import 'package:get_it/get_it.dart';
 import 'package:rivr/services/1_contracts/shared/i_flow_unit_preference_service.dart';
 import 'package:rivr/ui/2_presentation/features/forecast/widgets/horizontal_flow_timeline.dart';
 import 'package:rivr/ui/1_state/features/forecast/reach_data_provider.dart';
+import 'package:rivr/ui/1_state/shared/section_load_state.dart';
 import 'package:rivr/services/1_contracts/shared/i_forecast_service.dart';
 import 'package:rivr/ui/2_presentation/features/forecast/widgets/current_flow_status_card.dart';
 import 'package:rivr/ui/2_presentation/features/forecast/widgets/flow_values_usage_guide.dart';
+import 'package:rivr/ui/2_presentation/shared/widgets/data_source_message.dart';
 
 /// Enhanced forecast detail template that provides a consistent structure
 /// while allowing each forecast type to use specialized widgets for optimal data display.
@@ -203,16 +205,34 @@ class _ForecastDetailTemplateState extends State<ForecastDetailTemplate> {
       child: SafeArea(
         child: Consumer<ReachDataProvider>(
           builder: (context, reachProvider, child) {
+            // Use per-section state for transparent messaging
+            final sectionState = reachProvider.getSectionState(
+              widget.forecastType,
+            );
+
             if (reachProvider.isLoading && !reachProvider.hasData) {
-              return _buildLoadingState();
+              return DataSourceMessage(
+                state: SectionLoadState.loading,
+                forecastType: widget.forecastType,
+              );
             }
 
-            if (reachProvider.errorMessage != null) {
-              return _buildErrorState(reachProvider.errorMessage!);
+            if (reachProvider.errorMessage != null && !reachProvider.hasData) {
+              return DataSourceMessage(
+                state: SectionLoadState.error,
+                forecastType: widget.forecastType,
+                onRetry: _handleRefresh,
+              );
             }
 
             if (!reachProvider.hasData) {
-              return _buildEmptyState();
+              return DataSourceMessage(
+                state: sectionState.isDone
+                    ? sectionState
+                    : SectionLoadState.empty,
+                forecastType: widget.forecastType,
+                onRetry: _handleRefresh,
+              );
             }
 
             return _buildContent(reachProvider);
@@ -314,6 +334,9 @@ class _ForecastDetailTemplateState extends State<ForecastDetailTemplate> {
         // Additional Content (if provided) - always at the end
         if (widget.additionalContent != null)
           SliverToBoxAdapter(child: widget.additionalContent!),
+
+        // Data source attribution
+        const SliverToBoxAdapter(child: DataSourceAttribution()),
 
         // Bottom padding
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
@@ -617,105 +640,4 @@ class _ForecastDetailTemplateState extends State<ForecastDetailTemplate> {
     );
   }
 
-  Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CupertinoActivityIndicator(radius: 20),
-          const SizedBox(height: 16),
-          Text(
-            'Loading ${widget.title.toLowerCase()}...',
-            style: const TextStyle(
-              fontSize: 16,
-              color: CupertinoColors.secondaryLabel,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              CupertinoIcons.exclamationmark_triangle,
-              size: 64,
-              color: CupertinoColors.systemRed,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Unable to load forecast',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: CupertinoColors.label,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: const TextStyle(
-                fontSize: 14,
-                color: CupertinoColors.secondaryLabel,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            CupertinoButton.filled(
-              onPressed: _handleRefresh,
-              child: const Text('Try Again'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              CupertinoIcons.chart_bar,
-              size: 64,
-              color: CupertinoColors.systemGrey,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No ${widget.title.toLowerCase()} data available',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: CupertinoColors.label,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Check back later for updated forecasts',
-              style: TextStyle(
-                fontSize: 14,
-                color: CupertinoColors.secondaryLabel,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            CupertinoButton(
-              onPressed: _handleRefresh,
-              child: const Text('Refresh'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

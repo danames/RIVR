@@ -8,8 +8,10 @@ import 'package:rivr/services/4_infrastructure/logging/app_logger.dart';
 import 'package:rivr/ui/2_presentation/routing/app_router.dart';
 import 'package:rivr/ui/1_state/features/favorites/favorites_provider.dart';
 import 'package:rivr/ui/1_state/features/forecast/reach_data_provider.dart';
+import 'package:rivr/ui/1_state/shared/section_load_state.dart';
 import 'package:rivr/ui/2_presentation/features/forecast/widgets/current_flow_status_card.dart';
 import 'package:rivr/ui/2_presentation/features/forecast/widgets/forecast_category_grid.dart';
+import 'package:rivr/ui/2_presentation/shared/widgets/data_source_message.dart';
 
 class ReachOverviewPage extends StatefulWidget {
   final String? reachId;
@@ -264,6 +266,9 @@ class _ReachOverviewPageState extends State<ReachOverviewPage> {
 
           // Technical Info Section - Coordinates and Reach ID at bottom
           SliverToBoxAdapter(child: _buildTechnicalInfoSection(reach)),
+
+          // Data source attribution
+          const SliverToBoxAdapter(child: DataSourceAttribution()),
 
           // Add some bottom padding
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
@@ -735,37 +740,10 @@ class _ReachOverviewPageState extends State<ReachOverviewPage> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              CupertinoIcons.chart_bar,
-              size: 48,
-              color: CupertinoColors.secondaryLabel,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No Forecast Data',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: CupertinoColors.label,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'This reach currently has no forecast data available.',
-              style: TextStyle(
-                color: CupertinoColors.secondaryLabel.resolveFrom(context),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return DataSourceMessage(
+      state: SectionLoadState.empty,
+      forecastType: 'short_range',
+      onRetry: _loadReachData,
     );
   }
 }

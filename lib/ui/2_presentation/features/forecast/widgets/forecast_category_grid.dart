@@ -3,6 +3,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:rivr/ui/1_state/features/forecast/reach_data_provider.dart';
+import 'package:rivr/ui/1_state/shared/section_load_state.dart';
 
 class ForecastCategoryGrid extends StatelessWidget {
   final Function(String forecastType)? onCategoryTap;
@@ -36,7 +37,7 @@ class ForecastCategoryGrid extends StatelessWidget {
     );
   }
 
-  // UPDATED: Use individual loading states for each category
+  // Use per-section SectionLoadState for each category
   Widget _buildVerticalCards(
     BuildContext context,
     ReachDataProvider reachProvider,
@@ -48,65 +49,30 @@ class ForecastCategoryGrid extends StatelessWidget {
         final index = entry.key;
         final category = entry.value;
 
-        // UPDATED: Get individual loading and availability states
-        final categoryState = _getCategoryState(category.type, reachProvider);
-        final isAvailable = categoryState['isAvailable'] as bool;
-        final isLoading = categoryState['isLoading'] as bool;
+        final sectionState = reachProvider.getSectionState(category.type);
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: _buildCategoryCard(
             context,
             category,
-            isAvailable,
-            isLoading,
-            index, // Pass the index for opacity calculation
+            sectionState,
+            index,
           ),
         );
       }).toList(),
     );
   }
 
-  // NEW: Get individual state for each forecast category
-  Map<String, dynamic> _getCategoryState(
-    String forecastType,
-    ReachDataProvider reachProvider,
-  ) {
-    switch (forecastType) {
-      case 'short_range':
-        return {
-          'isAvailable': reachProvider.hasHourlyForecast,
-          'isLoading': reachProvider.isLoadingHourly,
-        };
-      case 'medium_range':
-        return {
-          'isAvailable': reachProvider.hasDailyForecast,
-          'isLoading': reachProvider.isLoadingDaily,
-        };
-      case 'long_range':
-        return {
-          'isAvailable': reachProvider.hasExtendedForecast,
-          'isLoading': reachProvider.isLoadingExtended,
-        };
-      default:
-        // Fallback for other forecast types (like analysis_assimilation)
-        final availableTypes = reachProvider.getAvailableForecastTypes();
-        return {
-          'isAvailable': availableTypes.contains(forecastType),
-          'isLoading': reachProvider.isLoading,
-        };
-    }
-  }
-
-  // KEPT EXACTLY THE SAME: Your beautiful category card design
   Widget _buildCategoryCard(
     BuildContext context,
     ForecastCategory category,
-    bool isAvailable,
-    bool isLoading,
-    int index, // Add index parameter
+    SectionLoadState state,
+    int index,
   ) {
-    final opacity = isAvailable ? 1.0 : 0.5;
+    final isAvailable = state.hasData;
+    final isLoading = state.isLoading;
+    final opacity = isAvailable || isLoading || state.isIdle ? 1.0 : 0.7;
 
     // Calculate gradient opacity based on index (1.0, 0.8, 0.6)
     final gradientOpacity = isAvailable ? (1.0 - (index * 0.2)) : 0.5;
@@ -214,13 +180,9 @@ class ForecastCategoryGrid extends StatelessWidget {
 
                           const SizedBox(height: 4),
 
-                          // UPDATED: Better status messages for progressive loading
+                          // State-aware status message
                           Text(
-                            _getCategoryStatusMessage(
-                              isAvailable,
-                              isLoading,
-                              category.description,
-                            ),
+                            _getStatusMessage(state, category.description),
                             style: TextStyle(
                               color: CupertinoColors.white.withValues(alpha: 0.7),
                               fontSize: 12,
@@ -237,31 +199,7 @@ class ForecastCategoryGrid extends StatelessWidget {
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (isLoading)
-                          const CupertinoActivityIndicator(
-                            color: CupertinoColors.white,
-                            radius: 10,
-                          )
-                        else if (isAvailable)
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: const BoxDecoration(
-                              color: CupertinoColors.systemGreen,
-                              shape: BoxShape.circle,
-                            ),
-                          )
-                        else
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: CupertinoColors.systemGrey6.withValues(
-                                alpha: 0.9,
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
+                        _buildStatusIndicator(state),
 
                         const SizedBox(height: 8),
 
@@ -284,18 +222,69 @@ class ForecastCategoryGrid extends StatelessWidget {
     );
   }
 
-  // NEW: Better status messages for progressive loading
-  String _getCategoryStatusMessage(
-    bool isAvailable,
-    bool isLoading,
-    String defaultDescription,
-  ) {
-    if (isLoading) {
-      return 'Loading forecast data...';
-    } else if (isAvailable) {
-      return defaultDescription;
-    } else {
-      return 'Data not available at the moment';
+  // Status indicator dot/spinner per section state
+  Widget _buildStatusIndicator(SectionLoadState state) {
+    switch (state) {
+      case SectionLoadState.loading:
+        return const CupertinoActivityIndicator(
+          color: CupertinoColors.white,
+          radius: 10,
+        );
+      case SectionLoadState.loaded:
+        return Container(
+          width: 12,
+          height: 12,
+          decoration: const BoxDecoration(
+            color: CupertinoColors.systemGreen,
+            shape: BoxShape.circle,
+          ),
+        );
+      case SectionLoadState.empty:
+        return Container(
+          width: 12,
+          height: 12,
+          decoration: const BoxDecoration(
+            color: CupertinoColors.systemOrange,
+            shape: BoxShape.circle,
+          ),
+        );
+      case SectionLoadState.error:
+        return Container(
+          width: 12,
+          height: 12,
+          decoration: const BoxDecoration(
+            color: CupertinoColors.systemRed,
+            shape: BoxShape.circle,
+          ),
+        );
+      case SectionLoadState.idle:
+      case SectionLoadState.unavailable:
+        return Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: CupertinoColors.systemGrey6.withValues(alpha: 0.9),
+            shape: BoxShape.circle,
+          ),
+        );
+    }
+  }
+
+  // State-aware status messages
+  String _getStatusMessage(SectionLoadState state, String defaultDescription) {
+    switch (state) {
+      case SectionLoadState.idle:
+        return 'Waiting to load...';
+      case SectionLoadState.loading:
+        return 'Loading forecast data...';
+      case SectionLoadState.loaded:
+        return defaultDescription;
+      case SectionLoadState.empty:
+        return 'Temporarily unavailable. Try refreshing.';
+      case SectionLoadState.error:
+        return 'Failed to load. Pull down to retry.';
+      case SectionLoadState.unavailable:
+        return 'Not available for this reach.';
     }
   }
 

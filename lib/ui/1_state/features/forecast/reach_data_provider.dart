@@ -10,6 +10,7 @@ import 'package:rivr/models/2_usecases/features/forecast/load_forecast_supplemen
 import 'package:rivr/models/2_usecases/features/forecast/load_specific_forecast_usecase.dart';
 import 'package:rivr/models/2_usecases/features/forecast/load_complete_forecast_usecase.dart';
 import 'package:rivr/ui/1_state/features/forecast/reach_data_cache_mixin.dart';
+import 'package:rivr/ui/1_state/shared/section_load_state.dart';
 
 /// State management for reach and forecast data
 /// Now with phased loading and progressive forecast category loading
@@ -58,10 +59,11 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
   String _loadingPhase =
       'none'; // 'none', 'overview', 'supplementary', 'complete'
 
-  // Progressive forecast category loading states
-  bool _isLoadingHourly = false;
-  bool _isLoadingDaily = false;
-  bool _isLoadingExtended = false;
+  // Per-section load states (Phase 2 — replaces boolean flags)
+  SectionLoadState _hourlyState = SectionLoadState.idle;
+  SectionLoadState _dailyState = SectionLoadState.idle;
+  SectionLoadState _extendedState = SectionLoadState.idle;
+  SectionLoadState _returnPeriodsState = SectionLoadState.idle;
 
   // Getters
   bool get isLoading => _isLoading;
@@ -71,10 +73,16 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
   String? get errorMessage => _errorMessage;
   bool get hasData => _currentForecast != null;
 
-  // Forecast category loading state getters
-  bool get isLoadingHourly => _isLoadingHourly;
-  bool get isLoadingDaily => _isLoadingDaily;
-  bool get isLoadingExtended => _isLoadingExtended;
+  // Per-section state getters
+  SectionLoadState get hourlyState => _hourlyState;
+  SectionLoadState get dailyState => _dailyState;
+  SectionLoadState get extendedState => _extendedState;
+  SectionLoadState get returnPeriodsState => _returnPeriodsState;
+
+  // Backward-compatible boolean getters (derived from section states)
+  bool get isLoadingHourly => _hourlyState.isLoading;
+  bool get isLoadingDaily => _dailyState.isLoading;
+  bool get isLoadingExtended => _extendedState.isLoading;
 
   // Get current reach data if available
   ReachData? get currentReach => _currentForecast?.reach;
@@ -110,21 +118,38 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
   Map<String, dynamic> getForecastCategoryLoadingState() {
     return {
       'hourly': {
-        'loading': _isLoadingHourly,
+        'loading': _hourlyState.isLoading,
         'available': hasHourlyForecast,
+        'state': _hourlyState,
         'type': 'short_range',
       },
       'daily': {
-        'loading': _isLoadingDaily,
+        'loading': _dailyState.isLoading,
         'available': hasDailyForecast,
+        'state': _dailyState,
         'type': 'medium_range',
       },
       'extended': {
-        'loading': _isLoadingExtended,
+        'loading': _extendedState.isLoading,
         'available': hasExtendedForecast,
+        'state': _extendedState,
         'type': 'long_range',
       },
     };
+  }
+
+  /// Get the [SectionLoadState] for a given forecast type.
+  SectionLoadState getSectionState(String forecastType) {
+    switch (forecastType) {
+      case 'short_range':
+        return _hourlyState;
+      case 'medium_range':
+        return _dailyState;
+      case 'long_range':
+        return _extendedState;
+      default:
+        return SectionLoadState.idle;
+    }
   }
 
   // PHASE 1 - Load overview data only (reach info + current flow)
@@ -178,14 +203,14 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
 
   // Load hourly forecast data specifically (short-range)
   Future<bool> loadHourlyForecast(String reachId) async {
-    _setLoadingHourly(true);
+    _setSectionState('short_range', SectionLoadState.loading);
 
     try {
       // If we don't have any data yet, load overview first
       if (_currentForecast == null) {
         final overviewSuccess = await loadOverviewData(reachId);
         if (!overviewSuccess) {
-          _setLoadingHourly(false);
+          _setSectionState('short_range', SectionLoadState.error);
           return false;
         }
       }
@@ -198,7 +223,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
           'ReachProvider',
           'Error loading hourly forecast: ${result.errorMessage}',
         );
-        _setLoadingHourly(false);
+        _setSectionState('short_range', SectionLoadState.error);
         return false;
       }
 
@@ -207,25 +232,29 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       sessionCache[reachId] = _currentForecast!;
       updateComputedCaches(reachId);
 
-      _setLoadingHourly(false);
-      return true;
+      // Determine loaded vs empty
+      _setSectionState(
+        'short_range',
+        hasHourlyForecast ? SectionLoadState.loaded : SectionLoadState.empty,
+      );
+      return hasHourlyForecast;
     } catch (e) {
       AppLogger.error('ReachProvider', 'Error loading hourly forecast', e);
-      _setLoadingHourly(false);
+      _setSectionState('short_range', SectionLoadState.error);
       return false;
     }
   }
 
   // Load daily forecast data specifically (medium-range)
   Future<bool> loadDailyForecast(String reachId) async {
-    _setLoadingDaily(true);
+    _setSectionState('medium_range', SectionLoadState.loading);
 
     try {
       // If we don't have any data yet, load overview first
       if (_currentForecast == null) {
         final overviewSuccess = await loadOverviewData(reachId);
         if (!overviewSuccess) {
-          _setLoadingDaily(false);
+          _setSectionState('medium_range', SectionLoadState.error);
           return false;
         }
       }
@@ -238,7 +267,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
           'ReachProvider',
           'Error loading daily forecast: ${result.errorMessage}',
         );
-        _setLoadingDaily(false);
+        _setSectionState('medium_range', SectionLoadState.error);
         return false;
       }
 
@@ -247,25 +276,29 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       sessionCache[reachId] = _currentForecast!;
       updateComputedCaches(reachId);
 
-      _setLoadingDaily(false);
-      return true;
+      // Determine loaded vs empty
+      _setSectionState(
+        'medium_range',
+        hasDailyForecast ? SectionLoadState.loaded : SectionLoadState.empty,
+      );
+      return hasDailyForecast;
     } catch (e) {
       AppLogger.error('ReachProvider', 'Error loading daily forecast', e);
-      _setLoadingDaily(false);
+      _setSectionState('medium_range', SectionLoadState.error);
       return false;
     }
   }
 
   // Load extended forecast data specifically (long-range)
   Future<bool> loadExtendedForecast(String reachId) async {
-    _setLoadingExtended(true);
+    _setSectionState('long_range', SectionLoadState.loading);
 
     try {
       // If we don't have any data yet, load overview first
       if (_currentForecast == null) {
         final overviewSuccess = await loadOverviewData(reachId);
         if (!overviewSuccess) {
-          _setLoadingExtended(false);
+          _setSectionState('long_range', SectionLoadState.error);
           return false;
         }
       }
@@ -278,7 +311,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
           'ReachProvider',
           'Error loading extended forecast: ${result.errorMessage}',
         );
-        _setLoadingExtended(false);
+        _setSectionState('long_range', SectionLoadState.error);
         return false;
       }
 
@@ -290,11 +323,15 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       sessionCache[reachId] = _currentForecast!;
       updateComputedCaches(reachId);
 
-      _setLoadingExtended(false);
-      return true;
+      // Determine loaded vs empty
+      _setSectionState(
+        'long_range',
+        hasExtendedForecast ? SectionLoadState.loaded : SectionLoadState.empty,
+      );
+      return hasExtendedForecast;
     } catch (e) {
       AppLogger.error('ReachProvider', 'Error loading extended forecast', e);
-      _setLoadingExtended(false);
+      _setSectionState('long_range', SectionLoadState.error);
       return false;
     }
   }
@@ -367,6 +404,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
 
     final gen = ++_loadingGeneration;
     _setLoadingSupplementary(true);
+    _returnPeriodsState = SectionLoadState.loading;
     _clearError();
 
     try {
@@ -379,6 +417,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
         // Don't set error - supplementary data is not critical
         // Keep existing overview data
         _setLoadingSupplementary(false);
+        _returnPeriodsState = SectionLoadState.error;
         _setLoadingPhase('overview'); // Still have overview data
         return false;
       }
@@ -390,6 +429,9 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       updateComputedCaches(reachId);
 
       _setLoadingSupplementary(false);
+      _returnPeriodsState = hasSupplementaryData
+          ? SectionLoadState.loaded
+          : SectionLoadState.empty;
       _setLoadingPhase('complete');
       return true;
     } catch (e) {
@@ -397,6 +439,7 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       // Keep existing overview data
       if (gen != _loadingGeneration) return false;
       _setLoadingSupplementary(false);
+      _returnPeriodsState = SectionLoadState.error;
       _setLoadingPhase('overview'); // Still have overview data
       return false; // Indicate supplementary loading failed, but don't break UI
     }
@@ -529,25 +572,24 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
     }
   }
 
-  // Individual forecast category loading state setters
-  void _setLoadingHourly(bool loading) {
-    if (_isLoadingHourly != loading) {
-      _isLoadingHourly = loading;
-      notifyListeners();
-    }
-  }
-
-  void _setLoadingDaily(bool loading) {
-    if (_isLoadingDaily != loading) {
-      _isLoadingDaily = loading;
-      notifyListeners();
-    }
-  }
-
-  void _setLoadingExtended(bool loading) {
-    if (_isLoadingExtended != loading) {
-      _isLoadingExtended = loading;
-      notifyListeners();
+  // Per-section state setter — updates the correct field and notifies
+  void _setSectionState(String forecastType, SectionLoadState state) {
+    switch (forecastType) {
+      case 'short_range':
+        if (_hourlyState != state) {
+          _hourlyState = state;
+          notifyListeners();
+        }
+      case 'medium_range':
+        if (_dailyState != state) {
+          _dailyState = state;
+          notifyListeners();
+        }
+      case 'long_range':
+        if (_extendedState != state) {
+          _extendedState = state;
+          notifyListeners();
+        }
     }
   }
 
@@ -556,9 +598,10 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
     _isLoading = false;
     _isLoadingOverview = false;
     _isLoadingSupplementary = false;
-    _isLoadingHourly = false;
-    _isLoadingDaily = false;
-    _isLoadingExtended = false;
+    _hourlyState = SectionLoadState.idle;
+    _dailyState = SectionLoadState.idle;
+    _extendedState = SectionLoadState.idle;
+    _returnPeriodsState = SectionLoadState.idle;
   }
 
   void _setLoadingPhase(String phase) {
