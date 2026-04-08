@@ -58,7 +58,11 @@ class _CurrentFlowStatusCardState extends State<CurrentFlowStatusCard>
     final currentUnit = _getCurrentFlowUnit();
 
     // FIXED: No double conversion - flow is already in preferred unit from API service
-    return reach.getFlowCategory(currentFlow, currentUnit, GetIt.I<IFlowUnitPreferenceService>());
+    return reach.getFlowCategory(
+      currentFlow,
+      currentUnit,
+      GetIt.I<IFlowUnitPreferenceService>(),
+    );
   }
 
   // REMOVED: _convertFlowToCurrentUnit method - no longer needed!
@@ -108,7 +112,9 @@ class _CurrentFlowStatusCardState extends State<CurrentFlowStatusCard>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: CupertinoColors.systemGrey.withValues(alpha: 0.3),
+                        color: CupertinoColors.systemGrey.withValues(
+                          alpha: 0.3,
+                        ),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -132,8 +138,6 @@ class _CurrentFlowStatusCardState extends State<CurrentFlowStatusCard>
                           reachProvider,
                         ),
 
-                        const SizedBox(height: 12),
-                        _buildMetadata(reach, reachProvider),
                         if (widget.expanded) ...[
                           const SizedBox(height: 16),
                           _buildExpandedContent(reach, reachProvider),
@@ -291,7 +295,10 @@ class _CurrentFlowStatusCardState extends State<CurrentFlowStatusCard>
     final currentUnit = _getCurrentFlowUnit();
 
     // Get return periods in the same unit as current flow
-    final convertedReturnPeriods = reach.getReturnPeriodsInUnit(currentUnit, GetIt.I<IFlowUnitPreferenceService>());
+    final convertedReturnPeriods = reach.getReturnPeriodsInUnit(
+      currentUnit,
+      GetIt.I<IFlowUnitPreferenceService>(),
+    );
     if (convertedReturnPeriods == null || convertedReturnPeriods.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -487,51 +494,6 @@ class _CurrentFlowStatusCardState extends State<CurrentFlowStatusCard>
     );
   }
 
-  // Use cached formatted location
-  Widget _buildMetadata(dynamic reach, ReachDataProvider reachProvider) {
-    if (reach == null) return const SizedBox.shrink();
-
-    return Row(
-      children: [
-        Icon(
-          CupertinoIcons.location,
-          color: CupertinoColors.white.withValues(alpha: 0.8),
-          size: 16,
-        ),
-        const SizedBox(width: 6),
-        Text(
-          reach.displayName ?? reach.riverName,
-          style: TextStyle(
-            color: CupertinoColors.white.withValues(alpha: 0.9),
-            fontSize: 14,
-          ),
-        ),
-
-        //  Use cached formatted location (fixes subtitle issues)
-        Builder(
-          builder: (context) {
-            final formattedLocation = reachProvider.getFormattedLocation();
-            if (formattedLocation.isNotEmpty) {
-              return Row(
-                children: [
-                  const SizedBox(width: 8),
-                  Text(
-                    '• $formattedLocation',
-                    style: TextStyle(
-                      color: CupertinoColors.white.withValues(alpha: 0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
-      ],
-    );
-  }
-
   // IMPROVED: Handle loading states for return periods
   Widget _buildExpandedContent(dynamic reach, ReachDataProvider reachProvider) {
     return Column(
@@ -672,7 +634,10 @@ class _CurrentFlowStatusCardState extends State<CurrentFlowStatusCard>
     final currentUnit = _getCurrentFlowUnit();
 
     // Get return periods converted to current unit
-    final convertedReturnPeriods = reach.getReturnPeriodsInUnit(currentUnit, GetIt.I<IFlowUnitPreferenceService>());
+    final convertedReturnPeriods = reach.getReturnPeriodsInUnit(
+      currentUnit,
+      GetIt.I<IFlowUnitPreferenceService>(),
+    );
     if (convertedReturnPeriods == null) {
       return _buildReturnPeriodNotAvailable();
     }
