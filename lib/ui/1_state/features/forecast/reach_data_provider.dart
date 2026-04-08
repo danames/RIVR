@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:rivr/models/1_domain/shared/reach_data.dart';
 import 'package:rivr/services/4_infrastructure/logging/app_logger.dart';
 import 'package:rivr/services/1_contracts/shared/i_forecast_service.dart';
+import 'package:rivr/services/1_contracts/shared/i_forecast_cache_service.dart';
 import 'package:rivr/models/2_usecases/features/forecast/load_forecast_overview_usecase.dart';
 import 'package:rivr/models/2_usecases/features/forecast/load_forecast_supplementary_usecase.dart';
 import 'package:rivr/models/2_usecases/features/forecast/load_specific_forecast_usecase.dart';
@@ -19,6 +20,7 @@ import 'package:rivr/ui/1_state/shared/section_load_state.dart';
 /// Current flow recalculates after each merge (short → medium → long priority).
 class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
   final IForecastService _forecastService;
+  final IForecastCacheService _forecastCacheService;
   final LoadForecastOverviewUseCase _loadOverview;
   final LoadForecastSupplementaryUseCase _loadSupplementary;
   final LoadSpecificForecastUseCase _loadSpecificForecast;
@@ -26,11 +28,14 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
 
   ReachDataProvider({
     IForecastService? forecastService,
+    IForecastCacheService? forecastCacheService,
     LoadForecastOverviewUseCase? loadOverview,
     LoadForecastSupplementaryUseCase? loadSupplementary,
     LoadSpecificForecastUseCase? loadSpecificForecast,
     LoadCompleteForecastUseCase? loadComplete,
   })  : _forecastService = forecastService ?? GetIt.I<IForecastService>(),
+        _forecastCacheService =
+            forecastCacheService ?? GetIt.I<IForecastCacheService>(),
         _loadOverview =
             loadOverview ?? GetIt.I<LoadForecastOverviewUseCase>(),
         _loadSupplementary =
@@ -66,6 +71,11 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
   String _loadingPhase =
       'none'; // 'none', 'overview', 'supplementary', 'complete'
 
+  // SWR state (Phase 5: stale-while-revalidate disk cache)
+  bool _isShowingStaleData = false;
+  DateTime? _cacheTimestamp;
+  bool _isBackgroundRefreshing = false;
+
   // Per-section load states (Phase 2)
   SectionLoadState _hourlyState = SectionLoadState.idle;
   SectionLoadState _dailyState = SectionLoadState.idle;
@@ -79,6 +89,21 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
   String get loadingPhase => _loadingPhase;
   String? get errorMessage => _errorMessage;
   bool get hasData => _currentForecast != null;
+
+  // SWR getters
+  bool get isShowingStaleData => _isShowingStaleData;
+  DateTime? get cacheTimestamp => _cacheTimestamp;
+  bool get isBackgroundRefreshing => _isBackgroundRefreshing;
+
+  /// Human-readable age of the cached data (e.g. "Updated 12m ago").
+  String? get cacheAgeDescription {
+    if (_cacheTimestamp == null) return null;
+    final age = DateTime.now().difference(_cacheTimestamp!);
+    if (age.inMinutes < 1) return 'Updated just now';
+    if (age.inMinutes < 60) return 'Updated ${age.inMinutes}m ago';
+    if (age.inHours < 24) return 'Updated ${age.inHours}h ago';
+    return 'Updated ${age.inDays}d ago';
+  }
 
   // Per-section state getters
   SectionLoadState get hourlyState => _hourlyState;
@@ -117,6 +142,9 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
     clearAllComputedCaches();
     _errorMessage = null;
     _loadingPhase = 'none';
+    _isShowingStaleData = false;
+    _cacheTimestamp = null;
+    _isBackgroundRefreshing = false;
     _resetAllLoadingStates();
     notifyListeners();
   }
@@ -182,7 +210,35 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
       return true;
     }
 
-    // Step 1: Load overview (required base) — must complete first
+    // Path 2: Disk cache (SWR — stale-while-revalidate)
+    final diskResult = await _forecastCacheService.getWithFreshness(reachId);
+    if (gen != _loadingGeneration) return false;
+
+    if (diskResult != null) {
+      _currentForecast = diskResult.data;
+      updateComputedCaches(reachId);
+      _markAllSectionsFromCache();
+      sessionCache[reachId] = diskResult.data;
+
+      if (diskResult.isFresh) {
+        AppLogger.debug('ReachProvider', 'Disk cache FRESH for: $reachId');
+        _setLoadingPhase('complete');
+        return true;
+      }
+
+      // Stale — serve immediately, revalidate in background
+      AppLogger.debug(
+        'ReachProvider',
+        'Disk cache STALE for: $reachId — revalidating',
+      );
+      _isShowingStaleData = true;
+      _cacheTimestamp = diskResult.cachedAt;
+      _setLoadingPhase('complete');
+      _revalidateInBackground(reachId, gen);
+      return true;
+    }
+
+    // Path 3: Cache miss — full network loading
     _setLoadingOverview(true);
     _setSectionState('short_range', SectionLoadState.loading);
     _setSectionState('medium_range', SectionLoadState.loading);
@@ -366,6 +422,87 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
         return hasExtendedForecast;
       default:
         return false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // SWR background revalidation (Phase 5)
+  // ---------------------------------------------------------------------------
+
+  /// Silently refresh all data in the background while stale cache is displayed.
+  /// Does NOT change section loading states — stale data stays visible.
+  /// Each section merges its fresh data as it arrives; when all 4 complete,
+  /// the SWR flags are cleared.
+  void _revalidateInBackground(String reachId, int gen) {
+    _isBackgroundRefreshing = true;
+    notifyListeners();
+
+    // Clear service-level caches so fresh API calls are made
+    sessionCache.remove(reachId);
+    clearComputedCachesForReach(reachId);
+    _forecastService.clearComputedCaches();
+
+    int pending = 4;
+    void onSectionDone() {
+      pending--;
+      if (pending == 0 && gen == _loadingGeneration) {
+        sessionCache[reachId] = _currentForecast!;
+        _isBackgroundRefreshing = false;
+        _isShowingStaleData = false;
+        _cacheTimestamp = null;
+        notifyListeners();
+      }
+    }
+
+    _bgRefreshSection(reachId, 'short_range', gen).then((_) => onSectionDone());
+    _bgRefreshSection(reachId, 'medium_range', gen).then((_) => onSectionDone());
+    _bgRefreshSection(reachId, 'long_range', gen).then((_) => onSectionDone());
+    _bgRefreshSupplementary(reachId, gen).then((_) => onSectionDone());
+  }
+
+  /// Background-refresh a single forecast section. Merges silently into the
+  /// current forecast without touching section loading states.
+  Future<void> _bgRefreshSection(
+    String reachId,
+    String forecastType,
+    int gen,
+  ) async {
+    try {
+      final result = await _loadSpecificForecast(reachId, forecastType);
+      if (gen != _loadingGeneration) return;
+      if (result.isFailure) return; // Keep stale data
+
+      _currentForecast = _mergeForecastData(_currentForecast!, result.data);
+      clearFlowCachesForReach(reachId);
+      updateComputedCaches(reachId);
+      notifyListeners();
+    } catch (e) {
+      if (gen != _loadingGeneration) return;
+      AppLogger.error(
+        'ReachProvider',
+        'Background refresh $forecastType failed',
+        e,
+      );
+    }
+  }
+
+  /// Background-refresh supplementary data (return periods).
+  Future<void> _bgRefreshSupplementary(String reachId, int gen) async {
+    try {
+      final result = await _loadSupplementary(reachId, _currentForecast!);
+      if (gen != _loadingGeneration) return;
+      if (result.isFailure) return;
+
+      _mergeSupplementaryData(result.data);
+      updateComputedCaches(reachId);
+      notifyListeners();
+    } catch (e) {
+      if (gen != _loadingGeneration) return;
+      AppLogger.error(
+        'ReachProvider',
+        'Background refresh supplementary failed',
+        e,
+      );
     }
   }
 
@@ -591,6 +728,10 @@ class ReachDataProvider with ChangeNotifier, ReachDataCacheMixin {
     sessionCache.remove(reachId);
     clearComputedCachesForReach(reachId);
     _forecastService.clearComputedCaches();
+    _forecastCacheService.clearReach(reachId); // Clear disk cache entry
+    _isShowingStaleData = false;
+    _cacheTimestamp = null;
+    _isBackgroundRefreshing = false;
 
     return await loadAllData(reachId);
   }

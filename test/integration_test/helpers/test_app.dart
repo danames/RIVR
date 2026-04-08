@@ -23,6 +23,7 @@ import 'package:rivr/services/1_contracts/shared/i_flow_unit_preference_service.
 import 'package:rivr/services/1_contracts/shared/i_forecast_service.dart';
 import 'package:rivr/services/1_contracts/shared/i_noaa_api_service.dart';
 import 'package:rivr/services/1_contracts/shared/i_reach_cache_service.dart';
+import 'package:rivr/services/1_contracts/shared/i_forecast_cache_service.dart';
 import 'package:rivr/services/1_contracts/shared/i_user_settings_service.dart';
 import 'package:rivr/ui/1_state/features/auth/auth_provider.dart';
 import 'package:rivr/services/2_coordinators/features/favorites/favorites_repository_impl.dart';
@@ -66,6 +67,7 @@ class TestServices {
   final MockUserSettingsService userSettings;
   final MockBackgroundImageService backgroundImage;
   final MockFlowUnitPreferenceService flowUnit;
+  final MockForecastCacheService forecastCache;
 
   TestServices({
     MockAuthService? auth,
@@ -78,6 +80,7 @@ class TestServices {
     MockUserSettingsService? userSettings,
     MockBackgroundImageService? backgroundImage,
     MockFlowUnitPreferenceService? flowUnit,
+    MockForecastCacheService? forecastCache,
   })  : auth = auth ?? MockAuthService(),
         forecast = forecast ?? MockForecastService(),
         noaaApi = noaaApi ?? MockNoaaApiService(),
@@ -87,7 +90,8 @@ class TestServices {
         reachCache = reachCache ?? MockReachCacheService(),
         userSettings = userSettings ?? MockUserSettingsService(),
         backgroundImage = backgroundImage ?? MockBackgroundImageService(),
-        flowUnit = flowUnit ?? MockFlowUnitPreferenceService();
+        flowUnit = flowUnit ?? MockFlowUnitPreferenceService(),
+        forecastCache = forecastCache ?? MockForecastCacheService();
 
   /// Register all mocks in the GetIt service locator.
   void registerAll() {
@@ -102,6 +106,7 @@ class TestServices {
     sl.registerSingleton<IUserSettingsService>(userSettings);
     sl.registerSingleton<IBackgroundImageService>(backgroundImage);
     sl.registerSingleton<IFlowUnitPreferenceService>(flowUnit);
+    sl.registerSingleton<IForecastCacheService>(forecastCache);
 
     // Forecast repository + use cases (needed by ReachDataProvider)
     final forecastRepo = ForecastRepositoryImpl(forecastService: forecast);

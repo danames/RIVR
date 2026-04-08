@@ -209,6 +209,9 @@ class _ReachOverviewPageState extends State<ReachOverviewPage> {
           // Station Header - Shows immediately after Phase 1
           SliverToBoxAdapter(child: _buildStationHeader(reach, reachProvider)),
 
+          // Staleness indicator (Phase 5 SWR)
+          SliverToBoxAdapter(child: _buildStalenessIndicator(reachProvider)),
+
           // Hero Flow Status Card - Shows immediately after Phase 1
           SliverToBoxAdapter(child: _buildFlowStatusSection(reachProvider)),
 
@@ -278,6 +281,41 @@ class _ReachOverviewPageState extends State<ReachOverviewPage> {
             reachProvider.getFormattedLocation(),
             style: TextStyle(
               fontSize: 16,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Shows a subtle banner when displaying stale cached data or refreshing.
+  Widget _buildStalenessIndicator(ReachDataProvider reachProvider) {
+    if (!reachProvider.isShowingStaleData && !reachProvider.isBackgroundRefreshing) {
+      return const SizedBox.shrink();
+    }
+
+    final isRefreshing = reachProvider.isBackgroundRefreshing;
+    final ageText = reachProvider.cacheAgeDescription;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (isRefreshing)
+            const CupertinoActivityIndicator(radius: 7)
+          else
+            Icon(
+              CupertinoIcons.clock,
+              size: 14,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
+          const SizedBox(width: 6),
+          Text(
+            isRefreshing ? 'Refreshing...' : (ageText ?? 'Cached data'),
+            style: TextStyle(
+              fontSize: 13,
               color: CupertinoColors.secondaryLabel.resolveFrom(context),
             ),
           ),

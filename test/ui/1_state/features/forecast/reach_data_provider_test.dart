@@ -9,6 +9,8 @@ import 'package:rivr/models/2_usecases/features/forecast/load_forecast_supplemen
 import 'package:rivr/models/2_usecases/features/forecast/load_specific_forecast_usecase.dart';
 import 'package:rivr/models/2_usecases/features/forecast/load_complete_forecast_usecase.dart';
 import 'package:rivr/services/1_contracts/shared/i_forecast_service.dart';
+import 'package:rivr/services/1_contracts/shared/i_forecast_cache_service.dart';
+import 'package:rivr/services/1_contracts/shared/i_reach_cache_service.dart';
 import 'package:rivr/services/4_infrastructure/shared/service_result.dart';
 import 'package:rivr/ui/1_state/features/forecast/reach_data_provider.dart';
 import 'package:rivr/ui/1_state/shared/section_load_state.dart';
@@ -183,6 +185,46 @@ class StubCompleteUseCase implements LoadCompleteForecastUseCase {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Controllable stub for IForecastCacheService.
+class StubForecastCacheService implements IForecastCacheService {
+  CacheResult<ForecastResponse>? getWithFreshnessReturn;
+  final List<String> getWithFreshnessLog = [];
+  final List<String> storeLog = [];
+  final List<String> clearReachLog = [];
+  int clearAllCount = 0;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  bool get isReady => true;
+
+  @override
+  Future<CacheResult<ForecastResponse>?> getWithFreshness(
+      String reachId) async {
+    getWithFreshnessLog.add(reachId);
+    return getWithFreshnessReturn;
+  }
+
+  @override
+  Future<void> store(String reachId, ForecastResponse response) async {
+    storeLog.add(reachId);
+  }
+
+  @override
+  Future<void> clearReach(String reachId) async {
+    clearReachLog.add(reachId);
+  }
+
+  @override
+  Future<void> clearAll() async {
+    clearAllCount++;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getCacheStats() async => {};
+}
+
 // ---------------------------------------------------------------------------
 // Test data helpers
 // ---------------------------------------------------------------------------
@@ -230,6 +272,7 @@ ForecastResponse _forecastWithReturnPeriods() => ForecastResponse(
 
 void main() {
   late StubForecastService forecastService;
+  late StubForecastCacheService forecastCacheService;
   late StubOverviewUseCase overviewUseCase;
   late StubSpecificForecastUseCase specificUseCase;
   late StubSupplementaryUseCase supplementaryUseCase;
@@ -238,6 +281,7 @@ void main() {
   setUp(() {
     forecastService = StubForecastService();
     forecastService.currentFlowReturn = 150.0;
+    forecastCacheService = StubForecastCacheService();
 
     overviewUseCase = StubOverviewUseCase(
       (reachId) async => ServiceResult.success(_emptyForecast()),
@@ -260,6 +304,7 @@ void main() {
 
     provider = ReachDataProvider(
       forecastService: forecastService,
+      forecastCacheService: forecastCacheService,
       loadOverview: overviewUseCase,
       loadSpecificForecast: specificUseCase,
       loadSupplementary: supplementaryUseCase,
@@ -633,6 +678,165 @@ void main() {
       await Future.delayed(Duration.zero);
 
       expect(provider.loadingPhase, 'complete');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 5: Stale-while-revalidate disk cache
+  // -------------------------------------------------------------------------
+
+  group('SWR — fresh disk cache', () {
+    test('serves immediately, no overview use case call', () async {
+      final cachedResponse = ForecastResponse(
+        reach: createTestReachData(reachId: '999'),
+        shortRange: createTestForecastSeries(),
+        mediumRange: {'mean': createTestForecastSeries()},
+        longRange: {'mean': createTestForecastSeries()},
+      );
+
+      forecastCacheService.getWithFreshnessReturn = CacheResult(
+        data: cachedResponse,
+        freshness: CacheFreshness.fresh,
+        cachedAt: DateTime.now(),
+      );
+
+      final result = await provider.loadAllData('999');
+
+      expect(result, isTrue);
+      expect(provider.currentReach?.reachId, '999');
+      expect(provider.hasHourlyForecast, isTrue);
+      expect(provider.loadingPhase, 'complete');
+      expect(provider.isShowingStaleData, isFalse);
+      expect(provider.isBackgroundRefreshing, isFalse);
+
+      // Overview use case should NOT have been called
+      expect(overviewUseCase.callLog, isEmpty);
+      expect(specificUseCase.callLog, isEmpty);
+    });
+  });
+
+  group('SWR — stale disk cache', () {
+    test('serves immediately and fires background refresh', () async {
+      final cachedResponse = ForecastResponse(
+        reach: createTestReachData(reachId: '999'),
+        shortRange: createTestForecastSeries(),
+        mediumRange: {'mean': createTestForecastSeries()},
+        longRange: {'mean': createTestForecastSeries()},
+      );
+
+      final cacheTime = DateTime.now().subtract(const Duration(minutes: 45));
+      forecastCacheService.getWithFreshnessReturn = CacheResult(
+        data: cachedResponse,
+        freshness: CacheFreshness.stale,
+        cachedAt: cacheTime,
+      );
+
+      final result = await provider.loadAllData('999');
+
+      expect(result, isTrue);
+      expect(provider.currentReach?.reachId, '999');
+      expect(provider.isShowingStaleData, isTrue);
+      expect(provider.isBackgroundRefreshing, isTrue);
+      expect(provider.cacheTimestamp, cacheTime);
+      expect(provider.cacheAgeDescription, isNotNull);
+
+      // Overview use case still not called (background uses specific + supplementary)
+      expect(overviewUseCase.callLog, isEmpty);
+
+      // Background refresh should have fired section loads
+      expect(specificUseCase.callLog, isNotEmpty);
+    });
+
+    test('background refresh completes → clears stale state', () async {
+      final cachedResponse = ForecastResponse(
+        reach: createTestReachData(reachId: '999'),
+        shortRange: createTestForecastSeries(),
+        mediumRange: {'mean': createTestForecastSeries()},
+        longRange: {'mean': createTestForecastSeries()},
+      );
+
+      forecastCacheService.getWithFreshnessReturn = CacheResult(
+        data: cachedResponse,
+        freshness: CacheFreshness.stale,
+        cachedAt: DateTime.now().subtract(const Duration(minutes: 45)),
+      );
+
+      // Specific use cases return immediately
+      specificUseCase.handler = (reachId, type) async =>
+          ServiceResult.success(_emptyForecast(
+              reach: createTestReachData(reachId: reachId)));
+
+      supplementaryUseCase.handler = (reachId, existing) async =>
+          ServiceResult.success(_emptyForecast(
+              reach: createTestReachData(reachId: reachId)));
+
+      await provider.loadAllData('999');
+
+      // Let all background loads complete
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      expect(provider.isShowingStaleData, isFalse);
+      expect(provider.isBackgroundRefreshing, isFalse);
+      expect(provider.cacheTimestamp, isNull);
+    });
+  });
+
+  group('SWR — disk cache miss', () {
+    test('falls through to network path', () async {
+      // Default: forecastCacheService returns null (cache miss)
+      final result = await provider.loadAllData('123');
+
+      expect(result, isTrue);
+      // Should have called overview (network path)
+      expect(overviewUseCase.callLog, ['123']);
+      expect(forecastCacheService.getWithFreshnessLog, ['123']);
+    });
+  });
+
+  group('SWR — comprehensiveRefresh clears disk cache', () {
+    test('calls clearReach on disk cache', () async {
+      await provider.loadAllData('123');
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      await provider.comprehensiveRefresh('123');
+
+      expect(forecastCacheService.clearReachLog, contains('123'));
+    });
+  });
+
+  group('SWR — clearCurrentReach resets SWR state', () {
+    test('resets all SWR flags', () async {
+      final cachedResponse = ForecastResponse(
+        reach: createTestReachData(reachId: '999'),
+        shortRange: createTestForecastSeries(),
+        mediumRange: {},
+        longRange: {},
+      );
+
+      forecastCacheService.getWithFreshnessReturn = CacheResult(
+        data: cachedResponse,
+        freshness: CacheFreshness.stale,
+        cachedAt: DateTime.now().subtract(const Duration(minutes: 45)),
+      );
+
+      await provider.loadAllData('999');
+      expect(provider.isShowingStaleData, isTrue);
+
+      provider.clearCurrentReach();
+
+      expect(provider.isShowingStaleData, isFalse);
+      expect(provider.isBackgroundRefreshing, isFalse);
+      expect(provider.cacheTimestamp, isNull);
+      expect(provider.currentForecast, isNull);
+    });
+  });
+
+  group('SWR — cacheAgeDescription', () {
+    test('returns null when no cache timestamp', () {
+      expect(provider.cacheAgeDescription, isNull);
     });
   });
 }

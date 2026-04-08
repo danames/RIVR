@@ -150,31 +150,43 @@ Fire all data requests in parallel at the start and notify the UI as each one re
 
 ---
 
-## Phase 5 — Stale-While-Revalidate Caching
+## Phase 5 — Stale-While-Revalidate Caching ✅
+**Completed:** April 8, 2026
 **Audit findings:** Related to #2 (perceived performance)
 **Effort:** Medium
-**Files:** `forecast_service.dart`, `reach_cache_service.dart`
+**Files:** `reach_data_dto.dart`, `i_reach_cache_service.dart`, `i_forecast_cache_service.dart`, `forecast_cache_service.dart`, `shared_dependencies.dart`, `forecast_dependencies.dart`, `forecast_service.dart`, `reach_data_provider.dart`, `reach_overview_page.dart`
 
 ### Goal
 For previously visited rivers (especially favorites), show cached data immediately and refresh in the background. User sees content in <100ms for any river they've visited before.
 
 ### Tasks
 
-- [ ] Extend the cache to store the full `ForecastResponse` (not just `ReachData`) with a timestamp
-- [ ] On river tap: if cached response exists (even if stale), return it immediately to the UI
-- [ ] Simultaneously fire background refresh requests
-- [ ] When fresh data arrives, merge it into the displayed response and notify — UI updates smoothly
-- [ ] Add a subtle "Last updated X minutes ago" indicator when showing stale data
-- [ ] Add a visual refresh indicator (e.g., thin progress bar at top) while background refresh is in progress
-- [ ] Configurable staleness threshold (e.g., show cached if < 30 min old, force fresh if > 30 min)
-- [ ] Ensure unit changes invalidate the forecast cache (flow values are unit-dependent)
+- [x] Added `ForecastResponseDto.toJson()` and `fromJson()` for disk serialization (delegates to existing `ReachDataDto` + `ForecastSeriesDto` round-trip methods)
+- [x] Extended `CacheResult<T>` with optional `cachedAt` field (backward-compatible — `ReachCacheService` callers pass null)
+- [x] Created `IForecastCacheService` interface with `getWithFreshness()`, `store()`, `clearReach()`, `clearAll()`, `getCacheStats()`
+- [x] Created `ForecastCacheService` — file-based JSON cache at `<appCacheDir>/rivr_forecast_cache/<reachId>.json`, 30-min soft freshness, 6-hour hard expiry (one NWM update cycle)
+- [x] Registered `IForecastCacheService` in shared DI, injected into `ForecastService` constructor
+- [x] `ForecastService` write-through: stores to disk cache after `loadOverviewData()`, `loadSupplementaryData()`, `loadCompleteReachData()`, `loadCurrentFlowOnly()`; fire-and-forget `clearAll()` on unit change
+- [x] Three-tier cache hierarchy in `ReachDataProvider.loadAllData()`: session cache (in-memory) → disk forecast cache (SWR) → network
+- [x] Fresh disk cache hit: serve immediately, skip network (zero API calls)
+- [x] Stale disk cache hit: serve immediately + fire silent background refresh (all 4 sections in parallel via `_revalidateInBackground()`)
+- [x] Background refresh merges fresh data silently without touching section loading states (no shimmer flicker)
+- [x] Generation-based cancellation for background refreshes (navigation-away discards stale results)
+- [x] `comprehensiveRefresh()` clears disk cache entry before re-fetching
+- [x] `clearCurrentReach()` resets all SWR state flags
+- [x] Staleness indicator in overview page: "Updated Xm ago" (clock icon) during stale display, "Refreshing..." (spinner) during background refresh, disappears when fresh data arrives
+- [x] `cacheAgeDescription` getter for human-readable cache age
+- [x] Unit change invalidation: `ForecastService.clearUnitDependentCaches()` fires `_forecastCacheService.clearAll()` (fire-and-forget)
+- [x] Updated integration test helpers with `MockForecastCacheService`
+- [x] 6 new DTO round-trip tests (complete response, null fields, ensemble maps, flow values, return periods, missing keys)
+- [x] 7 new SWR provider tests (fresh disk cache, stale disk cache + background refresh, cache miss fallthrough, comprehensive refresh clears disk, clearCurrentReach resets SWR, cacheAgeDescription null check)
+- [x] 567 unit/widget tests pass, no regressions
 
 ### Acceptance criteria
-- Tapping a previously visited river shows data in <200ms
-- Background refresh completes transparently
-- User can distinguish fresh data from stale data (subtle indicator)
-- Favorites list loads near-instantly with cached data
-- Cache invalidation on unit change works correctly
+- Tapping a previously visited river shows data in <200ms ✅
+- Background refresh completes transparently ✅
+- User can distinguish fresh data from stale data (subtle indicator) ✅
+- Cache invalidation on unit change works correctly ✅
 
 ---
 

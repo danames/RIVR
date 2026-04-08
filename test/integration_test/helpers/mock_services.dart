@@ -25,6 +25,7 @@ import 'package:rivr/services/1_contracts/shared/i_user_settings_service.dart';
 import 'package:rivr/services/1_contracts/shared/i_background_image_service.dart';
 import 'package:rivr/services/4_infrastructure/media/background_image_service.dart';
 import 'package:rivr/services/1_contracts/shared/i_flow_unit_preference_service.dart';
+import 'package:rivr/services/1_contracts/shared/i_forecast_cache_service.dart';
 
 // ---------------------------------------------------------------------------
 // MockAuthService
@@ -1060,4 +1061,32 @@ class FakeVideoPlayerPlatform extends VideoPlayerPlatform {
   Future<void> setAllowBackgroundPlayback(bool allow) async {}
   @override
   Future<void> setWebOptions(int playerId, VideoPlayerWebOptions options) async {}
+}
+
+// ---------------------------------------------------------------------------
+// MockForecastCacheService
+// ---------------------------------------------------------------------------
+
+class MockForecastCacheService implements IForecastCacheService {
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  bool get isReady => true;
+
+  @override
+  Future<CacheResult<ForecastResponse>?> getWithFreshness(
+      String reachId) async => null;
+
+  @override
+  Future<void> store(String reachId, ForecastResponse response) async {}
+
+  @override
+  Future<void> clearReach(String reachId) async {}
+
+  @override
+  Future<void> clearAll() async {}
+
+  @override
+  Future<Map<String, dynamic>> getCacheStats() async => {};
 }

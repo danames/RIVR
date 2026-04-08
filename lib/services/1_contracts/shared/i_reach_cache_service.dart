@@ -10,7 +10,14 @@ class CacheResult<T> {
   final T data;
   final CacheFreshness freshness;
 
-  const CacheResult({required this.data, required this.freshness});
+  /// When the cached data was stored. Null for caches that don't track this.
+  final DateTime? cachedAt;
+
+  const CacheResult({
+    required this.data,
+    required this.freshness,
+    this.cachedAt,
+  });
 
   bool get isFresh => freshness == CacheFreshness.fresh;
   bool get isStale => freshness == CacheFreshness.stale;

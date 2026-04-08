@@ -5,6 +5,7 @@ import 'package:rivr/services/1_contracts/shared/i_flow_unit_preference_service.
 import 'package:rivr/services/1_contracts/shared/i_forecast_service.dart';
 import 'package:rivr/services/4_infrastructure/forecast/forecast_service.dart';
 import 'package:rivr/services/1_contracts/shared/i_reach_cache_service.dart';
+import 'package:rivr/services/1_contracts/shared/i_forecast_cache_service.dart';
 import 'package:rivr/services/1_contracts/features/forecast/i_forecast_repository.dart';
 import 'package:rivr/services/2_coordinators/features/forecast/forecast_repository_impl.dart';
 import 'package:rivr/models/2_usecases/features/forecast/load_forecast_overview_usecase.dart';
@@ -29,6 +30,7 @@ void setupForecastDependencies() {
       apiService: sl<INoaaApiService>(),
       cacheService: sl<IReachCacheService>(),
       unitService: sl<IFlowUnitPreferenceService>(),
+      forecastCacheService: sl<IForecastCacheService>(),
     ),
   );
 

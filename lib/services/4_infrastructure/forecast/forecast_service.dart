@@ -10,6 +10,7 @@ import 'package:rivr/services/4_infrastructure/shared/analytics_service.dart';
 import 'package:rivr/services/1_contracts/shared/i_noaa_api_service.dart';
 import 'package:rivr/services/1_contracts/shared/i_reach_cache_service.dart';
 import 'package:rivr/services/1_contracts/shared/i_flow_unit_preference_service.dart';
+import 'package:rivr/services/1_contracts/shared/i_forecast_cache_service.dart';
 import 'package:rivr/services/1_contracts/shared/i_forecast_service.dart';
 
 /// Timed cache entry with expiration
@@ -30,14 +31,17 @@ class ForecastService implements IForecastService {
   final INoaaApiService _apiService;
   final IReachCacheService _cacheService;
   final IFlowUnitPreferenceService _unitService;
+  final IForecastCacheService _forecastCacheService;
 
   ForecastService({
     required INoaaApiService apiService,
     required IReachCacheService cacheService,
     required IFlowUnitPreferenceService unitService,
+    required IForecastCacheService forecastCacheService,
   })  : _apiService = apiService,
         _cacheService = cacheService,
-        _unitService = unitService;
+        _unitService = unitService,
+        _forecastCacheService = forecastCacheService;
 
   // Cache computed values with TTL to avoid repeated calculations
   final Map<String, _TimedEntry<double?>> _currentFlowCache = {};
@@ -156,8 +160,9 @@ class ForecastService implements IForecastService {
       AppLogger.info('ForecastService', 'Overview data loaded successfully');
       AppLogger.debug('ForecastService', 'Final response reach: city=${overviewResponse.reach.city}, state=${overviewResponse.reach.state}');
 
-      // Cache the response for re-taps
+      // Cache the response for re-taps and disk SWR
       _storeRecentResponse(reachId, overviewResponse);
+      _forecastCacheService.store(reachId, overviewResponse);
 
       return overviewResponse;
     } catch (e) {
@@ -244,6 +249,7 @@ class ForecastService implements IForecastService {
       }
 
       AppLogger.info('ForecastService', 'Supplementary data loaded successfully');
+      _forecastCacheService.store(reachId, enhancedResponse);
       return enhancedResponse;
     } catch (e) {
       AppLogger.error('ForecastService', 'Error loading supplementary data', e);
@@ -338,6 +344,7 @@ class ForecastService implements IForecastService {
       }
 
       AppLogger.info('ForecastService', 'Complete data loaded successfully');
+      _forecastCacheService.store(reachId, completeResponse);
       return completeResponse;
     } catch (e) {
       AppLogger.error('ForecastService', 'Error loading complete data', e);
@@ -518,6 +525,7 @@ class ForecastService implements IForecastService {
       );
 
       AppLogger.info('ForecastService', 'Current flow only loaded successfully');
+      _forecastCacheService.store(reachId, lightweightResponse);
       return lightweightResponse;
     } catch (e) {
       AppLogger.error('ForecastService', 'Error loading current flow only', e);
@@ -950,6 +958,11 @@ class ForecastService implements IForecastService {
     _currentFlowCache.clear();
     _flowCategoryCache.clear();
     _recentResponseCache.clear();
+
+    // Clear disk forecast cache (fire-and-forget — keeps method synchronous)
+    _forecastCacheService.clearAll().catchError((e) {
+      AppLogger.error('ForecastService', 'Error clearing forecast disk cache', e);
+    });
   }
 
   @override

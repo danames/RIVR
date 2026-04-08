@@ -303,6 +303,67 @@ class ForecastSeriesDto {
 class ForecastResponseDto {
   ForecastResponseDto._();
 
+  /// Serialize a [ForecastResponse] to JSON for disk caching.
+  ///
+  /// Uses already unit-converted values (not raw NOAA API format).
+  /// Delegates to [ReachDataDto], [ForecastSeriesDto] which already have
+  /// complete toJson/fromJson round-trip support.
+  static Map<String, dynamic> toJson(ForecastResponse entity) {
+    return {
+      'reach': ReachDataDto.fromEntity(entity.reach).toJson(),
+      'analysisAssimilation': entity.analysisAssimilation != null
+          ? ForecastSeriesDto.fromEntity(entity.analysisAssimilation!).toJson()
+          : null,
+      'shortRange': entity.shortRange != null
+          ? ForecastSeriesDto.fromEntity(entity.shortRange!).toJson()
+          : null,
+      'mediumRange': entity.mediumRange.map(
+        (key, value) =>
+            MapEntry(key, ForecastSeriesDto.fromEntity(value).toJson()),
+      ),
+      'longRange': entity.longRange.map(
+        (key, value) =>
+            MapEntry(key, ForecastSeriesDto.fromEntity(value).toJson()),
+      ),
+      'mediumRangeBlend': entity.mediumRangeBlend != null
+          ? ForecastSeriesDto.fromEntity(entity.mediumRangeBlend!).toJson()
+          : null,
+    };
+  }
+
+  /// Deserialize a [ForecastResponse] from cached JSON.
+  ///
+  /// Inverse of [toJson]. For parsing raw NOAA API responses use
+  /// [fromApiResponse] instead.
+  static ForecastResponse fromJson(Map<String, dynamic> json) {
+    ForecastSeries? parseSeries(dynamic raw) {
+      if (raw == null) return null;
+      return ForecastSeriesDto.fromJson(raw as Map<String, dynamic>).toEntity();
+    }
+
+    Map<String, ForecastSeries> parseEnsembleMap(dynamic raw) {
+      if (raw == null) return {};
+      final map = raw as Map<String, dynamic>;
+      return map.map(
+        (key, value) => MapEntry(
+          key,
+          ForecastSeriesDto.fromJson(value as Map<String, dynamic>).toEntity(),
+        ),
+      );
+    }
+
+    return ForecastResponse(
+      reach: ReachDataDto.fromJson(
+        json['reach'] as Map<String, dynamic>,
+      ).toEntity(),
+      analysisAssimilation: parseSeries(json['analysisAssimilation']),
+      shortRange: parseSeries(json['shortRange']),
+      mediumRange: parseEnsembleMap(json['mediumRange']),
+      longRange: parseEnsembleMap(json['longRange']),
+      mediumRangeBlend: parseSeries(json['mediumRangeBlend']),
+    );
+  }
+
   /// Parse a NOAA API response into a [ForecastResponse] entity.
   static ForecastResponse fromApiResponse(Map<String, dynamic> json) {
     return ForecastResponse(
