@@ -507,11 +507,6 @@ void main() {
 
   group('current flow recalculation after each merge', () {
     test('current flow recalculates when section merges in', () async {
-      // Track getCurrentFlow calls by counting forecastService invocations
-      var flowCallCount = 0;
-      final originalReturn = forecastService.currentFlowReturn;
-      forecastService.currentFlowReturn = originalReturn;
-
       final shortCompleter = Completer<ServiceResult<ForecastResponse>>();
       specificUseCase.handler = (reachId, type) {
         if (type == 'short_range') return shortCompleter.future;
@@ -520,8 +515,8 @@ void main() {
 
       await provider.loadAllData('123');
 
-      // After overview, cache is populated
-      final flowBefore = provider.getCurrentFlow();
+      // After overview, cache is populated — read current flow to prime cache
+      provider.getCurrentFlow();
 
       // Complete short range — should recalculate
       shortCompleter.complete(

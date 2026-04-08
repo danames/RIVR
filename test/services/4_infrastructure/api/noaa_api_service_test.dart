@@ -267,7 +267,7 @@ void main() {
     late _StubFlowUnitService unitService;
 
     /// A minimal valid forecast response with actual data in shortRange.
-    Map<String, dynamic> _fullResponse() => {
+    Map<String, dynamic> fullResponse() => {
           'reach': {'reachId': '12345', 'name': 'Test River'},
           'shortRange': {
             'series': {
@@ -301,7 +301,7 @@ void main() {
         };
 
     /// A response where the filtered section has the structure but empty data arrays.
-    Map<String, dynamic> _emptyMediumRangeFilteredResponse() => {
+    Map<String, dynamic> emptyMediumRangeFilteredResponse() => {
           'reach': {'reachId': '12345', 'name': 'Test River'},
           'shortRange': {},
           'mediumRange': {
@@ -321,7 +321,7 @@ void main() {
           'analysisAssimilation': {},
         };
 
-    Map<String, dynamic> _emptyShortRangeFilteredResponse() => {
+    Map<String, dynamic> emptyShortRangeFilteredResponse() => {
           'reach': {'reachId': '12345', 'name': 'Test River'},
           'shortRange': {
             'series': {
@@ -345,7 +345,7 @@ void main() {
       final client = MockClient((request) async {
         callCount++;
         // Filtered endpoint returns valid data
-        return http.Response(jsonEncode(_fullResponse()), 200);
+        return http.Response(jsonEncode(fullResponse()), 200);
       });
 
       final service = NoaaApiService(
@@ -366,12 +366,12 @@ void main() {
         if (request.url.queryParameters.containsKey('series')) {
           // Filtered endpoint returns empty data
           return http.Response(
-            jsonEncode(_emptyMediumRangeFilteredResponse()),
+            jsonEncode(emptyMediumRangeFilteredResponse()),
             200,
           );
         } else {
           // Unfiltered endpoint returns full data
-          return http.Response(jsonEncode(_fullResponse()), 200);
+          return http.Response(jsonEncode(fullResponse()), 200);
         }
       });
 
@@ -400,11 +400,11 @@ void main() {
         requestUrls.add(request.url.toString());
         if (request.url.queryParameters.containsKey('series')) {
           return http.Response(
-            jsonEncode(_emptyShortRangeFilteredResponse()),
+            jsonEncode(emptyShortRangeFilteredResponse()),
             200,
           );
         } else {
-          return http.Response(jsonEncode(_fullResponse()), 200);
+          return http.Response(jsonEncode(fullResponse()), 200);
         }
       });
 
@@ -430,12 +430,12 @@ void main() {
         if (request.url.queryParameters.containsKey('series')) {
           // All filtered endpoints return empty data
           return http.Response(
-            jsonEncode(_emptyMediumRangeFilteredResponse()),
+            jsonEncode(emptyMediumRangeFilteredResponse()),
             200,
           );
         } else {
           unfilteredCallCount++;
-          return http.Response(jsonEncode(_fullResponse()), 200);
+          return http.Response(jsonEncode(fullResponse()), 200);
         }
       });
 
@@ -482,7 +482,7 @@ void main() {
       final requestUrls = <String>[];
       final client = MockClient((request) async {
         requestUrls.add(request.url.toString());
-        return http.Response(jsonEncode(_fullResponse()), 200);
+        return http.Response(jsonEncode(fullResponse()), 200);
       });
 
       final service = NoaaApiService(
@@ -507,7 +507,7 @@ void main() {
           return http.Response('Service Unavailable', 503);
         }
         // Filtered endpoints succeed
-        return http.Response(jsonEncode(_fullResponse()), 200);
+        return http.Response(jsonEncode(fullResponse()), 200);
       });
 
       final service = NoaaApiService(
