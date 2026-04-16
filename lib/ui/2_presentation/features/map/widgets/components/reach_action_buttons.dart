@@ -91,6 +91,9 @@ class _ReachActionButtonsState extends State<ReachActionButtons> {
                               : CupertinoColors.systemGrey.resolveFrom(
                                   context,
                                 ),
+                          semanticLabel: isFavorited
+                              ? 'Remove from favorites'
+                              : 'Add to favorites',
                         ),
                 );
               },
@@ -108,6 +111,7 @@ class _ReachActionButtonsState extends State<ReachActionButtons> {
             child: Icon(
               CupertinoIcons.ellipsis,
               color: CupertinoColors.systemGrey.resolveFrom(context),
+              semanticLabel: 'More options',
             ),
           ),
         ],

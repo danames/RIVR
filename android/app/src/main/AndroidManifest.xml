@@ -17,17 +17,12 @@
     <!-- Android 13+ notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
-    <!-- Optional: For scheduling exact alarms (Android 12+) -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    
     <!-- Location permissions for map functionality -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- Read and Write to External Storage or Device -->
+    <!-- Camera access for custom background photos (optional, via image_picker) -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     
     <!-- Biometric authentication -->
@@ -110,13 +105,15 @@
         </service>
         
         <!-- Firebase Messaging default configuration -->
-        <!-- Uncomment and customize if you want custom notification icons -->
-        <!-- <meta-data 
+        <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/ic_stat_ic_notification"/> -->
+            android:resource="@drawable/ic_notification"/>
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="high_importance_channel"/>
+            android:value="@string/default_notification_channel_id"/>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_name"
+            android:resource="@string/default_notification_channel_name"/>
 
         <!-- Flutter plugins registrant -->
         <meta-data

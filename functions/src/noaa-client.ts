@@ -14,14 +14,14 @@ const db = admin.firestore();
 const NOAA_CONFIG = {
   // Base URLs matching your AppConfig exactly
   noaaReachesBaseUrl: "https://api.water.noaa.gov/nwps/v1",
-  nwmReturnPeriodUrl: "https://nwm-api.ciroh.org//return-period",
+  nwmReturnPeriodUrl: "https://nwm-api.ciroh.org/return-period",
   nwmApiKey: process.env.NWM_API_KEY || "",
 
   // Request configuration
   timeout: 30000, // 30 second timeout
   headers: {
     "Content-Type": "application/json",
-    "User-Agent": "RivrFlow-Functions/1.0",
+    "User-Agent": "RIVR-Functions/1.0",
   },
 };
 

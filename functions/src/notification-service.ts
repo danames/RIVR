@@ -18,7 +18,7 @@ interface UserSettings {
   notificationFrequency: number; // 1, 2, 3, or 4 times per day
   preferredFlowUnit: "cfs" | "cms";
   favoriteReachIds: string[];
-  fcmToken?: string;
+  fcmTokens: string[];
   firstName: string;
   lastName: string;
 }
@@ -245,21 +245,23 @@ async function getNotificationUsers(
     for (const doc of usersSnapshot.docs) {
       const data = doc.data();
 
+      // Build token list: prefer fcmTokens array, fall back to legacy fcmToken
+      const tokens: string[] = [];
+      if (Array.isArray(data.fcmTokens) && data.fcmTokens.length > 0) {
+        tokens.push(...data.fcmTokens);
+      } else if (data.fcmToken) {
+        tokens.push(data.fcmToken);
+      }
+
       // Only include users with valid FCM tokens and favorite rivers
-      if (!data.fcmToken) {
+      if (tokens.length === 0) {
         skippedNoToken++;
-        logger.info(`👤 Skipped user ${doc.id}: missing FCM token`, {
-          userId: doc.id,
-          firstName: data.firstName || "unknown",
-        });
+        logger.info(`👤 Skipped user ${doc.id}: missing FCM token`);
       } else if (!data.favoriteReachIds ||
           !Array.isArray(data.favoriteReachIds) ||
           data.favoriteReachIds.length === 0) {
         skippedNoFavorites++;
-        logger.info(`👤 Skipped user ${doc.id}: no favorite rivers`, {
-          userId: doc.id,
-          firstName: data.firstName || "unknown",
-        });
+        logger.info(`👤 Skipped user ${doc.id}: no favorite rivers`);
       } else {
         users.push({
           userId: doc.id,
@@ -267,7 +269,7 @@ async function getNotificationUsers(
           notificationFrequency: data.notificationFrequency || 1,
           preferredFlowUnit: data.preferredFlowUnit || "cfs",
           favoriteReachIds: data.favoriteReachIds,
-          fcmToken: data.fcmToken,
+          fcmTokens: tokens,
           firstName: data.firstName || "User",
           lastName: data.lastName || "",
         });
@@ -279,7 +281,6 @@ async function getNotificationUsers(
       eligible: users.length,
       skippedNoToken,
       skippedNoFavorites,
-      userNames: users.map((u) => u.firstName),
     });
 
     return users;
@@ -450,69 +451,117 @@ async function sendAlert(
   reachId: string,
   alertData: AlertData
 ): Promise<boolean> {
-  try {
-    // Check if this is a repeat alert (sent within last 6 hours)
-    const isRepeat = await checkRecentAlert(user.userId, reachId);
-    const stillPrefix = isRepeat ? "Still exceeds" : "Exceeds";
+  // Check if this is a repeat alert (sent within last 6 hours)
+  const isRepeat = await checkRecentAlert(user.userId, reachId);
+  const stillPrefix = isRepeat ? "Still exceeds" : "Exceeds";
+  const unitLabel = user.preferredFlowUnit.toUpperCase();
 
-    const unitLabel = user.preferredFlowUnit.toUpperCase();
+  const staleTokens: string[] = [];
+  let anySent = false;
 
-    const message = {
-      token: user.fcmToken || "",
-      notification: {
-        title: `🌊 ${alertData.riverName} Flood Alert`,
-        body: `Forecast: ${alertData.forecastFlow} ${unitLabel} ` +
-          `(${stillPrefix} ${alertData.returnPeriod} flood threshold)`,
-      },
-      data: {
-        type: "flood_alert",
-        reachId: reachId,
-        riverName: alertData.riverName,
-        forecastFlow: String(alertData.forecastFlow),
-        threshold: String(alertData.threshold),
-        returnPeriod: alertData.returnPeriod,
-        flowUnit: user.preferredFlowUnit,
-      },
-      android: {
+  // Send to every registered token for this user
+  for (const token of user.fcmTokens) {
+    try {
+      const message = {
+        token,
         notification: {
-          icon: "ic_notification",
-          color: "#FF6B35",
+          title: `🌊 ${alertData.riverName} Flood Alert`,
+          body: `Forecast: ${alertData.forecastFlow} ${unitLabel} ` +
+            `(${stillPrefix} ${alertData.returnPeriod} flood threshold)`,
         },
-      },
-      apns: {
-        payload: {
-          aps: {
-            badge: 1,
-            sound: "default",
+        data: {
+          type: "flood_alert",
+          reachId: reachId,
+          riverName: alertData.riverName,
+          forecastFlow: String(alertData.forecastFlow),
+          threshold: String(alertData.threshold),
+          returnPeriod: alertData.returnPeriod,
+          flowUnit: user.preferredFlowUnit,
+        },
+        android: {
+          notification: {
+            channelId: "river_alerts",
+            icon: "ic_notification",
+            color: "#FF6B35",
           },
         },
-      },
-    };
+        apns: {
+          payload: {
+            aps: {
+              badge: 1,
+              sound: "default",
+            },
+          },
+        },
+      };
 
-    await messaging.send(message);
+      await messaging.send(message);
+      anySent = true;
+    } catch (error: unknown) {
+      const errorCode = (error as {code?: string}).code;
 
-    // Log the sent notification
+      if (
+        errorCode === "messaging/registration-token-not-registered" ||
+        errorCode === "messaging/invalid-registration-token" ||
+        errorCode === "messaging/invalid-argument"
+      ) {
+        logger.warn(
+          `🗑️ Stale FCM token for user ${user.userId}`,
+          {userId: user.userId, errorCode}
+        );
+        staleTokens.push(token);
+      } else {
+        const errorMessage = error instanceof Error ?
+          error.message : String(error);
+        logger.error(`❌ Failed to send to token for user ${user.userId}`, {
+          error: errorMessage,
+          errorCode,
+          reachId,
+        });
+      }
+    }
+  }
+
+  // Clean up any stale tokens
+  if (staleTokens.length > 0) {
+    try {
+      const updateData: Record<string, unknown> = {
+        fcmTokens: admin.firestore.FieldValue.arrayRemove(staleTokens),
+      };
+      // If all tokens are stale, disable notifications
+      if (staleTokens.length === user.fcmTokens.length) {
+        updateData.enableNotifications = false;
+      }
+      await db.collection("users").doc(user.userId).update(updateData);
+      logger.info(
+        `🗑️ Removed ${staleTokens.length} stale token(s) for user ${user.userId}`
+      );
+    } catch (cleanupError) {
+      logger.error("❌ Failed to clean up stale tokens", {
+        userId: user.userId,
+        error: cleanupError instanceof Error ?
+          cleanupError.message : String(cleanupError),
+      });
+    }
+  }
+
+  // Log and return
+  if (anySent) {
     await logNotification(user.userId, reachId, alertData);
-
     logger.info(
-      `📲 Alert sent to ${user.firstName} for ${alertData.riverName}`,
+      `📲 Alert sent to user ${user.userId} for ${alertData.riverName}`,
       {
         userId: user.userId,
         reachId,
         forecastFlow: alertData.forecastFlow,
         unit: unitLabel,
         isRepeat,
+        deviceCount: user.fcmTokens.length - staleTokens.length,
       }
     );
-
-    return true;
-  } catch (error) {
-    logger.error(`❌ Failed to send alert to user ${user.userId}`, {
-      error: error instanceof Error ? error.message : String(error),
-      reachId,
-    });
-    return false;
   }
+
+  return anySent;
 }
 
 /**

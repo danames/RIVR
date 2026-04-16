@@ -156,6 +156,7 @@ class FloodCategoriesInfoSheet extends StatelessWidget {
               CupertinoIcons.xmark_circle_fill,
               color: CupertinoColors.systemGrey3,
               size: 24,
+              semanticLabel: 'Close',
             ),
           ),
         ],
@@ -200,7 +201,7 @@ class FloodCategoriesInfoSheet extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: iconColor, size: 24),
+          Icon(icon, color: iconColor, size: 24, semanticLabel: title),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

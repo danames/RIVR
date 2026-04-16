@@ -277,7 +277,7 @@ void main() {
 
   // -----------------------------------------------------------------------
   group('getAndSaveToken', () {
-    test('calls updateUserSettings with fcmToken field', () async {
+    test('calls updateUserSettings with fcmTokens arrayUnion', () async {
       stubMessagingGranted(mockMessaging, token: testToken);
 
       final token = await service.getAndSaveToken(userId);
@@ -285,7 +285,9 @@ void main() {
       expect(token, testToken);
       expect(spySettings.updateCallCount, 1);
       expect(spySettings.lastUpdateUserId, userId);
-      expect(spySettings.lastUpdateData, containsPair('fcmToken', testToken));
+      expect(spySettings.lastUpdateData!.containsKey('fcmTokens'), isTrue);
+      // FieldValue.arrayUnion produces a sentinel object
+      expect(spySettings.lastUpdateData!['fcmTokens'], isA<FieldValue>());
     });
 
     test('does not call getUserSettings (partial update, not read-modify-write)',
@@ -327,7 +329,7 @@ void main() {
 
   // -----------------------------------------------------------------------
   group('enableNotifications', () {
-    test('writes fcmToken + enableNotifications atomically in one update call',
+    test('writes fcmTokens + enableNotifications atomically in one update call',
         () async {
       stubMessagingGranted(mockMessaging, token: testToken);
 
@@ -335,13 +337,9 @@ void main() {
 
       expect(result, NotificationPermissionResult.granted);
       expect(spySettings.updateCallCount, 1);
-      expect(
-        spySettings.lastUpdateData,
-        allOf(
-          containsPair('fcmToken', testToken),
-          containsPair('enableNotifications', true),
-        ),
-      );
+      expect(spySettings.lastUpdateData!.containsKey('fcmTokens'), isTrue);
+      expect(spySettings.lastUpdateData!['fcmTokens'], isA<FieldValue>());
+      expect(spySettings.lastUpdateData!['enableNotifications'], true);
     });
 
     test('returns error when token is null', () async {
@@ -389,16 +387,22 @@ void main() {
 
       expect(result, NotificationPermissionResult.granted);
       expect(spySettings.updateCallCount, 1);
-      expect(spySettings.lastUpdateData, containsPair('fcmToken', testToken));
+      expect(spySettings.lastUpdateData!.containsKey('fcmTokens'), isTrue);
+      expect(spySettings.lastUpdateData!['fcmTokens'], isA<FieldValue>());
     });
   });
 
   // -----------------------------------------------------------------------
   group('disableNotifications', () {
     test(
-        'calls updateUserSettings with FieldValue.delete() for fcmToken '
-        'and enableNotifications: false in one update', () async {
+        'calls updateUserSettings with FieldValue.arrayRemove for fcmTokens '
+        'and enableNotifications: false', () async {
       stubMessagingGranted(mockMessaging, token: testToken);
+
+      // Prime the cache so disableNotifications has a token to remove
+      await service.enableNotifications(userId);
+      spySettings.updateCallCount = 0;
+      spySettings.allUpdateCalls.clear();
 
       await service.disableNotifications(userId);
 
@@ -408,9 +412,9 @@ void main() {
         spySettings.lastUpdateData!['enableNotifications'],
         false,
       );
-      // FieldValue.delete() produces a sentinel object
+      // FieldValue.arrayRemove produces a sentinel object
       expect(
-        spySettings.lastUpdateData!['fcmToken'],
+        spySettings.lastUpdateData!['fcmTokens'],
         isA<FieldValue>(),
       );
     });
@@ -440,10 +444,8 @@ void main() {
           .thenAnswer((_) async => 'fcm-new-token-456-abcdefghijk');
       await service.enableNotifications(userId);
 
-      expect(
-        spySettings.lastUpdateData,
-        containsPair('fcmToken', 'fcm-new-token-456-abcdefghijk'),
-      );
+      expect(spySettings.lastUpdateData!.containsKey('fcmTokens'), isTrue);
+      expect(spySettings.lastUpdateData!['fcmTokens'], isA<FieldValue>());
     });
   });
 
@@ -455,10 +457,8 @@ void main() {
       await service.refreshTokenIfNeeded(userId);
 
       expect(spySettings.updateCallCount, 1);
-      expect(
-        spySettings.lastUpdateData,
-        containsPair('fcmToken', 'fcm-fresh-token-789-abcdefghij'),
-      );
+      expect(spySettings.lastUpdateData!.containsKey('fcmTokens'), isTrue);
+      expect(spySettings.lastUpdateData!['fcmTokens'], isA<FieldValue>());
     });
 
     test('skips save when token unchanged (matches cache)', () async {
@@ -512,10 +512,8 @@ void main() {
         provisional: anyNamed('provisional'),
         sound: anyNamed('sound'),
       )).called(greaterThanOrEqualTo(1));
-      expect(
-        spySettings.lastUpdateData,
-        containsPair('fcmToken', 'fcm-post-clear-token-abcdefghi'),
-      );
+      expect(spySettings.lastUpdateData!.containsKey('fcmTokens'), isTrue);
+      expect(spySettings.lastUpdateData!['fcmTokens'], isA<FieldValue>());
     });
   });
 
@@ -532,7 +530,7 @@ void main() {
         enableNotifications: true,
         favoriteReachIds: [],
         customBackgroundImagePaths: [],
-        fcmToken: testToken,
+        fcmTokens: [testToken],
         lastLoginDate: DateTime(2026, 1, 1),
         createdAt: DateTime(2026, 1, 1),
         updatedAt: DateTime(2026, 1, 1),
@@ -551,7 +549,7 @@ void main() {
       expect(enabled, isFalse);
     });
 
-    test('returns false when fcmToken is null', () async {
+    test('returns false when fcmTokens is empty', () async {
       spySettings.stubbedSettings = UserSettings(
         userId: userId,
         email: 'test@test.com',
@@ -562,7 +560,7 @@ void main() {
         enableNotifications: true,
         favoriteReachIds: [],
         customBackgroundImagePaths: [],
-        fcmToken: null,
+        fcmTokens: [],
         lastLoginDate: DateTime(2026, 1, 1),
         createdAt: DateTime(2026, 1, 1),
         updatedAt: DateTime(2026, 1, 1),

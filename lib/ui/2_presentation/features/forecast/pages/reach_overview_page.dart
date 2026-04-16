@@ -167,7 +167,7 @@ class _ReachOverviewPageState extends State<ReachOverviewPage> {
 
               return isAnyLoading
                   ? const CupertinoActivityIndicator(radius: 10)
-                  : const Icon(CupertinoIcons.refresh);
+                  : const Icon(CupertinoIcons.refresh, semanticLabel: 'Refresh data');
             },
           ),
         ),
@@ -345,6 +345,9 @@ class _ReachOverviewPageState extends State<ReachOverviewPage> {
                     color: isFavorited
                         ? CupertinoColors.systemRed
                         : CupertinoColors.systemGrey.resolveFrom(context),
+                    semanticLabel: isFavorited
+                        ? 'Remove from favorites'
+                        : 'Add to favorites',
                   ),
           ),
         );
@@ -657,6 +660,7 @@ class _ReachOverviewPageState extends State<ReachOverviewPage> {
               CupertinoIcons.exclamationmark_triangle,
               size: 48,
               color: CupertinoColors.systemRed,
+              semanticLabel: 'Error loading data',
             ),
             const SizedBox(height: 16),
             const Text(

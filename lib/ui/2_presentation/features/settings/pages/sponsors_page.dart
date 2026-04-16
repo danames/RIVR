@@ -66,6 +66,7 @@ class SponsorsPage extends StatelessWidget {
                         Icons.handshake,
                         size: 40,
                         color: const Color(0xFF1976D2),
+                        semanticLabel: 'Partnership',
                       ),
                       const SizedBox(height: 15),
                       const Text(
@@ -225,6 +226,7 @@ class SponsorsPage extends StatelessWidget {
               child: Image.asset(
                 imagePath,
                 fit: BoxFit.contain,
+                semanticLabel: '$organizationName logo',
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     decoration: BoxDecoration(

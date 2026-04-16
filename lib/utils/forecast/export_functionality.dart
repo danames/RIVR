@@ -271,6 +271,7 @@ class ExportFunctionality {
           CupertinoIcons.checkmark_circle_fill,
           color: CupertinoColors.systemGreen,
           size: 32,
+          semanticLabel: 'Success',
         ),
         content: Text(message),
         actions: [
@@ -292,6 +293,7 @@ class ExportFunctionality {
           CupertinoIcons.exclamationmark_triangle_fill,
           color: CupertinoColors.systemRed,
           size: 32,
+          semanticLabel: 'Export failed',
         ),
         content: Text('Export failed: $error'),
         actions: [

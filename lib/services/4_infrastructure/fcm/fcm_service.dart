@@ -189,7 +189,7 @@ class FCMService implements IFCMService {
   Future<void> _saveTokenToUserSettings(String userId, String token) async {
     try {
       await _userSettingsService.updateUserSettings(userId, {
-        'fcmToken': token,
+        'fcmTokens': FieldValue.arrayUnion([token]),
       });
       AppLogger.info('FcmService', 'Token saved to user settings');
     } catch (e) {
@@ -267,9 +267,9 @@ class FCMService implements IFCMService {
           'notificationFrequency': 1,
         });
       } else {
-        // Normal path: save token + flag + frequency together
+        // Normal path: add token to array + flag + frequency together
         await _userSettingsService.updateUserSettings(userId, {
-          'fcmToken': token,
+          'fcmTokens': FieldValue.arrayUnion([token]),
           'enableNotifications': true,
           'notificationFrequency': 1,
         });
@@ -290,14 +290,17 @@ class FCMService implements IFCMService {
     try {
       AppLogger.debug('FcmService', 'Disabling notifications for user: $userId');
 
-      // Clear cached token
+      // Remove this device's token from the array
+      final tokenToRemove = _cachedToken;
       _cachedToken = null;
 
-      // Remove token and disable flag atomically via partial update
-      await _userSettingsService.updateUserSettings(userId, {
-        'fcmToken': FieldValue.delete(),
+      final updates = <String, dynamic>{
         'enableNotifications': false,
-      });
+      };
+      if (tokenToRemove != null) {
+        updates['fcmTokens'] = FieldValue.arrayRemove([tokenToRemove]);
+      }
+      await _userSettingsService.updateUserSettings(userId, updates);
       AppLogger.info('FcmService', 'Token removed and notifications disabled');
 
       // Delete token from Firebase (prevents old tokens from being used)
@@ -340,7 +343,15 @@ class FCMService implements IFCMService {
       // Update Firestore if the token has changed
       if (freshToken != _cachedToken) {
         AppLogger.info('FcmService', 'FCM token changed, updating Firestore');
+        final oldToken = _cachedToken;
         _cachedToken = freshToken;
+
+        // Remove old token and add new one atomically
+        if (oldToken != null) {
+          await _userSettingsService.updateUserSettings(userId, {
+            'fcmTokens': FieldValue.arrayRemove([oldToken]),
+          });
+        }
         await _saveTokenToUserSettings(userId, freshToken);
       } else {
         AppLogger.debug('FcmService', 'FCM token unchanged');
@@ -349,7 +360,14 @@ class FCMService implements IFCMService {
       // Listen for future token rotations (only register once)
       _tokenRefreshSubscription ??= _messaging.onTokenRefresh.listen((newToken) async {
         AppLogger.debug('FcmService', 'Token refreshed: ${newToken.substring(0, 20)}...');
+        final oldToken = _cachedToken;
         _cachedToken = newToken;
+
+        if (oldToken != null) {
+          await _userSettingsService.updateUserSettings(userId, {
+            'fcmTokens': FieldValue.arrayRemove([oldToken]),
+          });
+        }
         await _saveTokenToUserSettings(userId, newToken);
       });
     } catch (e) {

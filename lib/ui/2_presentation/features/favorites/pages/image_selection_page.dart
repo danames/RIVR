@@ -493,6 +493,7 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
                   ? Image.file(
                       File(imagePath),
                       fit: BoxFit.cover,
+                      semanticLabel: 'Custom river background image',
                       errorBuilder: (context, error, stackTrace) {
                         return _buildImageError();
                       },
@@ -500,6 +501,7 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
                   : Image.asset(
                       imagePath,
                       fit: BoxFit.cover,
+                      semanticLabel: 'River background image',
                       errorBuilder: (context, error, stackTrace) {
                         return _buildImageError();
                       },

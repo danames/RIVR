@@ -63,7 +63,12 @@ class AuthErrorDisplay extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 18),
+          Icon(
+            icon,
+            color: color,
+            size: 18,
+            semanticLabel: type.name,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -80,7 +85,7 @@ class AuthErrorDisplay extends StatelessWidget {
               padding: EdgeInsets.zero,
               onPressed: onDismiss,
               minimumSize: Size(0, 0),
-              child: Icon(CupertinoIcons.xmark, color: color, size: 16),
+              child: Icon(CupertinoIcons.xmark, color: color, size: 16, semanticLabel: 'Dismiss'),
             ),
         ],
       ),

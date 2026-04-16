@@ -789,6 +789,7 @@ class _CurrentFlowStatusCardState extends State<CurrentFlowStatusCard>
               CupertinoIcons.exclamationmark_circle,
               color: CupertinoColors.white,
               size: 24,
+              semanticLabel: 'No flow data available',
             ),
             SizedBox(height: 8),
             Text(

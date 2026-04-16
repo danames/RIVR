@@ -15,7 +15,7 @@ void main() {
     bool enableNotifications = true,
     int notificationFrequency = 1,
     List<String> favoriteReachIds = const [],
-    String? fcmToken,
+    List<String> fcmTokens = const [],
     List<String> customBackgroundImagePaths = const [],
     DateTime? lastLoginDate,
     DateTime? createdAt,
@@ -31,7 +31,7 @@ void main() {
       enableNotifications: enableNotifications,
       notificationFrequency: notificationFrequency,
       favoriteReachIds: favoriteReachIds,
-      fcmToken: fcmToken,
+      fcmTokens: fcmTokens,
       customBackgroundImagePaths: customBackgroundImagePaths,
       lastLoginDate: lastLoginDate ?? now,
       createdAt: createdAt ?? now,
@@ -62,7 +62,7 @@ void main() {
           enableNotifications: false,
           notificationFrequency: 3,
           favoriteReachIds: ['123', '456'],
-          fcmToken: 'token_abc',
+          fcmTokens: ['token_abc'],
           customBackgroundImagePaths: ['/path/to/img.jpg'],
         );
 
@@ -78,7 +78,7 @@ void main() {
         expect(restored.enableNotifications, false);
         expect(restored.notificationFrequency, 3);
         expect(restored.favoriteReachIds, ['123', '456']);
-        expect(restored.fcmToken, 'token_abc');
+        expect(restored.fcmTokens, ['token_abc']);
         expect(restored.customBackgroundImagePaths, ['/path/to/img.jpg']);
         expect(restored.lastLoginDate, original.lastLoginDate);
         expect(restored.createdAt, original.createdAt);
@@ -103,7 +103,7 @@ void main() {
         expect(settings.enableNotifications, false);
         expect(settings.notificationFrequency, 1);
         expect(settings.favoriteReachIds, isEmpty);
-        expect(settings.fcmToken, isNull);
+        expect(settings.fcmTokens, isEmpty);
         expect(settings.customBackgroundImagePaths, isEmpty);
       });
 
@@ -267,10 +267,13 @@ void main() {
         expect(settings.fullName, 'Doe');
       });
 
-      test('hasValidFCMToken checks for non-null non-empty token', () {
-        expect(createSettings(fcmToken: null).hasValidFCMToken, false);
-        expect(createSettings(fcmToken: '').hasValidFCMToken, false);
-        expect(createSettings(fcmToken: 'token_abc').hasValidFCMToken, true);
+      test('hasValidFCMToken checks for non-empty token list', () {
+        expect(createSettings(fcmTokens: []).hasValidFCMToken, false);
+        expect(createSettings(fcmTokens: ['token_abc']).hasValidFCMToken, true);
+        expect(
+          createSettings(fcmTokens: ['token1', 'token2']).hasValidFCMToken,
+          true,
+        );
       });
     });
   });

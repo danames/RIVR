@@ -226,6 +226,7 @@ class _ImageTileState extends State<ImageTile>
     return Image.asset(
       widget.imagePath,
       fit: BoxFit.cover,
+      semanticLabel: 'River background image',
       errorBuilder: (context, error, stackTrace) {
         return _buildImageError();
       },

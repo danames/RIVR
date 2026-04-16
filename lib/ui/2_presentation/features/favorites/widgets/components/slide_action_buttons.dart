@@ -143,7 +143,7 @@ class SlideActionButtons extends StatelessWidget {
             children: [
               Padding(
                 padding: iconPadding, // Use the parameter
-                child: Icon(icon, color: CupertinoColors.white, size: 22),
+                child: Icon(icon, color: CupertinoColors.white, size: 22, semanticLabel: label),
               ),
               const SizedBox(height: 6),
               Padding(

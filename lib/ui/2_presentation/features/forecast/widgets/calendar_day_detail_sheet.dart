@@ -120,6 +120,7 @@ class _CalendarDayDetailSheetState extends State<CalendarDayDetailSheet> {
               CupertinoIcons.xmark_circle_fill,
               color: CupertinoColors.systemGrey3,
               size: 28,
+              semanticLabel: 'Close',
             ),
           ),
         ],

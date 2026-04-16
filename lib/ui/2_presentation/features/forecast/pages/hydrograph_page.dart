@@ -520,7 +520,7 @@ class _HydrographPageState extends State<HydrographPage> {
             CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: _showChartInfo,
-              child: const Icon(CupertinoIcons.info_circle),
+              child: const Icon(CupertinoIcons.info_circle, semanticLabel: 'Chart information'),
             ),
           ],
         ),
@@ -685,6 +685,7 @@ class _HydrographPageState extends State<HydrographPage> {
               CupertinoIcons.zoom_out,
               size: 16,
               color: CupertinoColors.label.resolveFrom(context),
+              semanticLabel: 'Reset zoom',
             ),
           ),
 
@@ -699,6 +700,7 @@ class _HydrographPageState extends State<HydrographPage> {
               CupertinoIcons.share,
               size: 16,
               color: CupertinoColors.label.resolveFrom(context),
+              semanticLabel: 'Export chart',
             ),
           ),
         ],

@@ -37,12 +37,14 @@ class OnboardingPageContent extends StatelessWidget {
               svgAsset!,
               width: 200,
               height: 200,
+              semanticsLabel: '$title illustration',
             )
           else
             Image.asset(
               imageAsset!,
               width: 200,
               height: 200,
+              semanticLabel: '$title illustration',
             ),
           const Spacer(),
           Text(

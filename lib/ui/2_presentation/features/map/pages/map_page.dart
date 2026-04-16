@@ -213,6 +213,7 @@ class MapPageState extends State<MapPage> {
               CupertinoIcons.exclamationmark_triangle,
               size: 48,
               color: CupertinoColors.systemRed,
+              semanticLabel: 'Map error',
             ),
             const SizedBox(height: 16),
             const Text(

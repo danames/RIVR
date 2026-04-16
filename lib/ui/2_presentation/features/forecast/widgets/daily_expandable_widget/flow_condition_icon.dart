@@ -33,7 +33,12 @@ class FlowConditionIcon extends StatelessWidget {
     final iconData = _getIconForCategory(flowCategory);
     final iconColor = color ?? _getColorForCategory(flowCategory);
 
-    final icon = Icon(iconData, color: iconColor, size: size);
+    final icon = Icon(
+      iconData,
+      color: iconColor,
+      size: size,
+      semanticLabel: '$flowCategory flow condition',
+    );
 
     if (withBackground) {
       return Container(

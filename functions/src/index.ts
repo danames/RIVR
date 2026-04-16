@@ -3,6 +3,12 @@
 
 import * as functions from "firebase-functions/v1";
 import * as logger from "firebase-functions/logger";
+import * as admin from "firebase-admin";
+
+// Initialize Firebase Admin if not already done
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 /**
  * Scheduled functions for checking river flood alerts at specific times
@@ -88,53 +94,121 @@ async function runAlertCheckForSlot(
 }
 
 /**
- * Manual trigger for testing specific time slots
- * Usage: POST with body {"slot": 1} to test slot 1
+ * Validates the admin API key against the ADMIN_API_KEY env variable.
+ * Accepts the key via `Authorization: Bearer <key>` or `X-Admin-Key: <key>`.
+ * The X-Admin-Key header is useful when Google Cloud IAM consumes the
+ * Authorization header before the request reaches the function code.
+ * Returns true if authenticated, false otherwise (also sends the 401 response).
  */
-export const triggerAlertCheck = functions.https.onRequest(
-  async (request, response) => {
-    logger.info("🧪 Manual alert check triggered");
+function authenticateRequest(
+  request: functions.https.Request,
+  response: functions.Response
+): boolean {
+  const adminApiKey = process.env.ADMIN_API_KEY;
 
-    try {
-      const slot = request.body?.slot || 1;
+  if (!adminApiKey) {
+    logger.error("ADMIN_API_KEY environment variable is not configured");
+    response.status(500).json({
+      success: false,
+      error: "Server authentication is not configured",
+    });
+    return false;
+  }
 
-      if (slot < 1 || slot > 4) {
-        response.status(400).json({
-          success: false,
-          error: "Slot must be between 1 and 4",
-        });
+  // Try X-Admin-Key header first (works when IAM consumes Authorization)
+  const xAdminKey = request.headers["x-admin-key"] as string | undefined;
+  if (xAdminKey) {
+    if (xAdminKey === adminApiKey) return true;
+
+    logger.warn("Unauthorized request: invalid X-Admin-Key");
+    response.status(401).json({success: false, error: "Invalid API key"});
+    return false;
+  }
+
+  // Fall back to Authorization: Bearer <key>
+  const authHeader = request.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    logger.warn("Unauthorized request: missing admin key");
+    response.status(401).json({
+      success: false,
+      error: "Missing API key. Use Authorization: Bearer <key> or X-Admin-Key: <key>",
+    });
+    return false;
+  }
+
+  const token = authHeader.slice("Bearer ".length);
+
+  if (token !== adminApiKey) {
+    logger.warn("Unauthorized request: invalid API key");
+    response.status(401).json({
+      success: false,
+      error: "Invalid API key",
+    });
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Manual trigger for testing specific time slots (requires ADMIN_API_KEY)
+ * Usage: POST with Authorization: Bearer <ADMIN_API_KEY> and body {"slot": 1}
+ */
+export const triggerAlertCheck = functions
+  .runWith({memory: "1GB", timeoutSeconds: 540})
+  .https.onRequest(
+    async (request, response) => {
+      if (!authenticateRequest(request, response)) {
         return;
       }
 
-      const {checkAlertsForTimeSlot} = await import(
-        "./notification-service.js"
-      );
-      const result = await checkAlertsForTimeSlot(slot);
+      logger.info("🧪 Manual alert check triggered");
 
-      logger.info(`✅ Manual check for slot ${slot} completed`, result);
+      try {
+        const slot = request.body?.slot || 1;
 
-      response.json({
-        success: true,
-        slot,
-        message: `Alert check for slot ${slot} completed successfully`,
-        ...result,
-      });
-    } catch (error) {
-      logger.error("❌ Manual alert check failed", {error});
+        if (slot < 1 || slot > 4) {
+          response.status(400).json({
+            success: false,
+            error: "Slot must be between 1 and 4",
+          });
+          return;
+        }
 
-      response.status(500).json({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
+        const {checkAlertsForTimeSlot} = await import(
+          "./notification-service.js"
+        );
+        const result = await checkAlertsForTimeSlot(slot);
+
+        logger.info(`✅ Manual check for slot ${slot} completed`, result);
+
+        response.json({
+          success: true,
+          slot,
+          message: `Alert check for slot ${slot} completed successfully`,
+          ...result,
+        });
+      } catch (error) {
+        logger.error("❌ Manual alert check failed", {error});
+
+        response.status(500).json({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
-  }
-);
+  );
 
 /**
- * Health check endpoint
+ * Health check endpoint (requires ADMIN_API_KEY)
  */
 export const healthCheck = functions.https.onRequest(
   async (request, response) => {
+    if (!authenticateRequest(request, response)) {
+      return;
+    }
+
     response.json({
       status: "healthy",
       timestamp: new Date().toISOString(),
@@ -148,3 +222,53 @@ export const healthCheck = functions.https.onRequest(
     });
   }
 );
+
+/**
+ * Daily cleanup of old notification logs (runs at 3:00 AM MT).
+ * Deletes documents older than 30 days to keep the collection bounded.
+ */
+export const cleanupNotificationLogs = functions
+  .runWith({memory: "256MB", timeoutSeconds: 120})
+  .pubsub.schedule("0 3 * * *")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    const db = admin.firestore();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    logger.info("🧹 Starting notification_logs cleanup", {
+      cutoff: thirtyDaysAgo.toISOString(),
+    });
+
+    let totalDeleted = 0;
+
+    // Delete in batches of 500 (Firestore batch limit)
+    const batchSize = 500;
+    let hasMore = true;
+
+    while (hasMore) {
+      const snapshot = await db.collection("notification_logs")
+        .where("sentAt", "<", thirtyDaysAgo)
+        .limit(batchSize)
+        .get();
+
+      if (snapshot.empty) {
+        hasMore = false;
+        break;
+      }
+
+      const batch = db.batch();
+      snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+
+      totalDeleted += snapshot.size;
+
+      // If we got fewer than batchSize, we're done
+      if (snapshot.size < batchSize) {
+        hasMore = false;
+      }
+    }
+
+    logger.info("✅ Notification logs cleanup completed", {
+      deletedCount: totalDeleted,
+    });
+  });

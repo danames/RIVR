@@ -69,6 +69,7 @@ class NavigationErrorPage extends StatelessWidget {
                 icon ?? CupertinoIcons.exclamationmark_triangle,
                 size: 64,
                 color: _getIconColor(),
+                semanticLabel: title ?? 'Error',
               ),
 
               const SizedBox(height: 24),

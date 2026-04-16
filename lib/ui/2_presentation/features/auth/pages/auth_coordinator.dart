@@ -176,6 +176,7 @@ class _AuthCoordinatorState extends State<AuthCoordinator> {
                   CupertinoIcons.exclamationmark_triangle,
                   size: 60,
                   color: CupertinoColors.systemRed,
+                  semanticLabel: 'Initialization failed',
                 ),
                 const SizedBox(height: 20),
                 const Text(
@@ -291,6 +292,7 @@ class _AuthCoordinatorState extends State<AuthCoordinator> {
                   CupertinoIcons.checkmark_circle,
                   size: 50,
                   color: CupertinoColors.white,
+                  semanticLabel: 'Welcome',
                 ),
               ),
               const SizedBox(height: 30),

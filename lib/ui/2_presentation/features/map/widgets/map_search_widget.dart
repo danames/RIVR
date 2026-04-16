@@ -329,6 +329,7 @@ class _MapSearchModalState extends State<MapSearchModal> {
                 CupertinoIcons.xmark_circle_fill,
                 color: CupertinoColors.systemGrey3.resolveFrom(context),
                 size: 20,
+                semanticLabel: 'Clear search',
               ),
             ),
           ],

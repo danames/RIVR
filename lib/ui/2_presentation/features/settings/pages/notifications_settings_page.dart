@@ -257,9 +257,9 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
   }
 
   Widget _buildRegistrationStatusSection() {
-    final token = _userSettings?.fcmToken;
-    final hasToken = token != null && token.isNotEmpty;
-    final isPending = token == 'pending';
+    final tokens = _userSettings?.fcmTokens ?? [];
+    final hasToken = tokens.isNotEmpty;
+    final isPending = tokens.length == 1 && tokens.first == 'pending';
 
     final Color iconColor;
     final IconData icon;
@@ -270,8 +270,11 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage> {
     if (hasToken && !isPending) {
       iconColor = CupertinoColors.systemGreen;
       icon = CupertinoIcons.shield_fill;
-      title = 'Device registered';
-      subtitle = '...${token.substring(token.length - 8)}';
+      title = tokens.length == 1
+          ? 'Device registered'
+          : '${tokens.length} devices registered';
+      final lastToken = tokens.last;
+      subtitle = '...${lastToken.substring(lastToken.length - 8)}';
       footer = null;
     } else if (isPending) {
       iconColor = CupertinoColors.systemOrange;

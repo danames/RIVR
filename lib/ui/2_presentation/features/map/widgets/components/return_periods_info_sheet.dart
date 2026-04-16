@@ -78,6 +78,7 @@ class ReturnPeriodsInfoSheet extends StatelessWidget {
               CupertinoIcons.xmark_circle_fill,
               color: CupertinoColors.systemGrey3,
               size: 24,
+              semanticLabel: 'Close',
             ),
           ),
         ],

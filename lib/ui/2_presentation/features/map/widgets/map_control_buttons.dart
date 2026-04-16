@@ -83,7 +83,12 @@ class MapControlButtons extends StatelessWidget {
       child: CupertinoButton(
         padding: EdgeInsets.zero,
         onPressed: onPressed,
-        child: Icon(icon, color: CupertinoColors.systemBlue, size: 20),
+        child: Icon(
+          icon,
+          color: CupertinoColors.systemBlue,
+          size: 20,
+          semanticLabel: tooltip,
+        ),
       ),
     );
   }
@@ -129,6 +134,7 @@ class MapControlButtons extends StatelessWidget {
           CupertinoIcons.view_3d,
           color: iconColor,
           size: 20,
+          semanticLabel: tooltip,
         ),
       ),
     );

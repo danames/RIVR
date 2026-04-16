@@ -30,6 +30,7 @@ class NotificationPromptBanner extends StatelessWidget {
                 CupertinoIcons.bell_fill,
                 color: CupertinoColors.systemBlue,
                 size: 20,
+                semanticLabel: 'Notification alert',
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -65,6 +66,7 @@ class NotificationPromptBanner extends StatelessWidget {
                   size: 16,
                   color:
                       CupertinoColors.secondaryLabel.resolveFrom(context),
+                  semanticLabel: 'Dismiss notification prompt',
                 ),
               ),
             ],

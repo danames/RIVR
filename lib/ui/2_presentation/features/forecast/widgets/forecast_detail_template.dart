@@ -198,7 +198,7 @@ class _ForecastDetailTemplateState extends State<ForecastDetailTemplate> {
           onPressed: _isRefreshing ? null : _handleRefresh,
           child: _isRefreshing
               ? const CupertinoActivityIndicator(radius: 10)
-              : const Icon(CupertinoIcons.refresh),
+              : const Icon(CupertinoIcons.refresh, semanticLabel: 'Refresh forecast'),
         ),
         backgroundColor: CupertinoColors.systemBackground.resolveFrom(context),
       ),

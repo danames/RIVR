@@ -407,6 +407,8 @@ class _FavoriteRiverCardState extends State<FavoriteRiverCard>
       child: Image.asset(
         widget.favorite.customImageAsset!,
         fit: BoxFit.cover,
+        semanticLabel:
+            'Background image for ${widget.favorite.displayName}',
         errorBuilder: (context, error, stackTrace) {
           // If custom image fails, fall back to video
           AppLogger.error(

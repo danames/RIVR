@@ -15,7 +15,7 @@ void main() {
     bool enableNotifications = true,
     int notificationFrequency = 1,
     List<String> favoriteReachIds = const [],
-    String? fcmToken,
+    List<String> fcmTokens = const [],
     List<String> customBackgroundImagePaths = const [],
     DateTime? lastLoginDate,
     DateTime? createdAt,
@@ -31,7 +31,7 @@ void main() {
       enableNotifications: enableNotifications,
       notificationFrequency: notificationFrequency,
       favoriteReachIds: favoriteReachIds,
-      fcmToken: fcmToken,
+      fcmTokens: fcmTokens,
       customBackgroundImagePaths: customBackgroundImagePaths,
       lastLoginDate: lastLoginDate ?? now,
       createdAt: createdAt ?? now,
@@ -52,7 +52,7 @@ void main() {
           enableNotifications: false,
           notificationFrequency: 3,
           favoriteReachIds: ['123', '456'],
-          fcmToken: 'token_abc',
+          fcmTokens: ['token_abc'],
           customBackgroundImagePaths: ['/path/to/img.jpg'],
           lastLoginDate: now.toIso8601String(),
           createdAt: now.toIso8601String(),
@@ -71,7 +71,7 @@ void main() {
         expect(restored.enableNotifications, false);
         expect(restored.notificationFrequency, 3);
         expect(restored.favoriteReachIds, ['123', '456']);
-        expect(restored.fcmToken, 'token_abc');
+        expect(restored.fcmTokens, ['token_abc']);
         expect(restored.customBackgroundImagePaths, ['/path/to/img.jpg']);
         expect(restored.lastLoginDate, now.toIso8601String());
         expect(restored.createdAt, now.toIso8601String());
@@ -95,7 +95,7 @@ void main() {
         expect(dto.enableNotifications, false);
         expect(dto.notificationFrequency, 1);
         expect(dto.favoriteReachIds, isEmpty);
-        expect(dto.fcmToken, isNull);
+        expect(dto.fcmTokens, isEmpty);
         expect(dto.customBackgroundImagePaths, isEmpty);
       });
     });
@@ -108,7 +108,7 @@ void main() {
           enableNotifications: false,
           notificationFrequency: 3,
           favoriteReachIds: ['123', '456'],
-          fcmToken: 'token_abc',
+          fcmTokens: ['token_abc'],
           customBackgroundImagePaths: ['/path/to/img.jpg'],
         );
 
@@ -127,7 +127,7 @@ void main() {
         expect(restored.enableNotifications, false);
         expect(restored.notificationFrequency, 3);
         expect(restored.favoriteReachIds, ['123', '456']);
-        expect(restored.fcmToken, 'token_abc');
+        expect(restored.fcmTokens, ['token_abc']);
         expect(restored.customBackgroundImagePaths, ['/path/to/img.jpg']);
         expect(restored.lastLoginDate, original.lastLoginDate);
         expect(restored.createdAt, original.createdAt);
@@ -172,13 +172,31 @@ void main() {
         expect(restored.preferredTimeFormat, TimeFormat.twentyFourHour);
       });
 
-      test('handles null fcmToken', () {
-        final entity = createSettings(fcmToken: null);
+      test('handles empty fcmTokens', () {
+        final entity = createSettings();
         final dto = UserSettingsDto.fromEntity(entity);
-        expect(dto.fcmToken, isNull);
+        expect(dto.fcmTokens, isEmpty);
 
         final restored = dto.toEntity();
-        expect(restored.fcmToken, isNull);
+        expect(restored.fcmTokens, isEmpty);
+      });
+
+      test('reads legacy fcmToken field for backward compatibility', () {
+        final json = {
+          'userId': 'u1',
+          'email': 'a@b.com',
+          'firstName': 'A',
+          'lastName': 'B',
+          'preferredFlowUnit': 'cfs',
+          'preferredTimeFormat': 'twelveHour',
+          'fcmToken': 'legacy_token',
+          'lastLoginDate': DateTime(2025, 6, 15, 12, 0).toIso8601String(),
+          'createdAt': DateTime(2025, 6, 15, 12, 0).toIso8601String(),
+          'updatedAt': DateTime(2025, 6, 15, 12, 0).toIso8601String(),
+        };
+
+        final dto = UserSettingsDto.fromJson(json);
+        expect(dto.fcmTokens, ['legacy_token']);
       });
     });
   });

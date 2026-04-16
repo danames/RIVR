@@ -77,6 +77,7 @@ class NotificationFrequencyPicker extends StatelessWidget {
               CupertinoIcons.checkmark,
               color: CupertinoColors.systemBlue,
               size: 20,
+              semanticLabel: 'Selected',
             )
           : null,
       onTap: isEnabled ? () => onChanged(frequency) : null,

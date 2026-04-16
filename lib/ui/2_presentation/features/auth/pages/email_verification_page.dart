@@ -38,6 +38,7 @@ class EmailVerificationPage extends StatelessWidget {
                       CupertinoIcons.mail,
                       size: 48,
                       color: primaryColor,
+                      semanticLabel: 'Email verification',
                     ),
                   ),
                   const SizedBox(height: 32),

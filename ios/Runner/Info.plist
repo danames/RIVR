@@ -35,6 +35,8 @@
 	<true/>
 	<key>MBXAccessToken</key>
 	<string>$(MAPBOX_ACCESS_TOKEN)</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>RIVR uses Face ID to quickly and securely sign you in.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to take photos for custom backgrounds.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
@@ -47,6 +49,8 @@
 	<string>This app saves exported forecast charts to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to photo library to save exported charts.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

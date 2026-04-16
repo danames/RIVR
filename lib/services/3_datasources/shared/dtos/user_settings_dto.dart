@@ -16,7 +16,7 @@ class UserSettingsDto {
   final bool enableNotifications;
   final int notificationFrequency;
   final List<String> favoriteReachIds;
-  final String? fcmToken;
+  final List<String> fcmTokens;
   final List<String> customBackgroundImagePaths;
   final String lastLoginDate;
   final String createdAt;
@@ -32,7 +32,7 @@ class UserSettingsDto {
     required this.enableNotifications,
     this.notificationFrequency = 1,
     required this.favoriteReachIds,
-    this.fcmToken,
+    this.fcmTokens = const [],
     this.customBackgroundImagePaths = const [],
     required this.lastLoginDate,
     required this.createdAt,
@@ -53,7 +53,7 @@ class UserSettingsDto {
       favoriteReachIds: List<String>.from(
         json['favoriteReachIds'] as List? ?? [],
       ),
-      fcmToken: json['fcmToken'] as String?,
+      fcmTokens: _parseFcmTokens(json),
       customBackgroundImagePaths: List<String>.from(
         json['customBackgroundImagePaths'] as List? ?? [],
       ),
@@ -74,7 +74,7 @@ class UserSettingsDto {
       'enableNotifications': enableNotifications,
       'notificationFrequency': notificationFrequency,
       'favoriteReachIds': favoriteReachIds,
-      'fcmToken': fcmToken,
+      'fcmTokens': fcmTokens,
       'customBackgroundImagePaths': customBackgroundImagePaths,
       'lastLoginDate': lastLoginDate,
       'createdAt': createdAt,
@@ -96,12 +96,27 @@ class UserSettingsDto {
       enableNotifications: enableNotifications,
       notificationFrequency: notificationFrequency,
       favoriteReachIds: favoriteReachIds,
-      fcmToken: fcmToken,
+      fcmTokens: fcmTokens,
       customBackgroundImagePaths: customBackgroundImagePaths,
       lastLoginDate: DateTime.parse(lastLoginDate),
       createdAt: DateTime.parse(createdAt),
       updatedAt: DateTime.parse(updatedAt),
     );
+  }
+
+  /// Parse FCM tokens with backward compatibility.
+  /// Reads `fcmTokens` array first; falls back to wrapping legacy `fcmToken` string.
+  static List<String> _parseFcmTokens(Map<String, dynamic> json) {
+    final tokens = json['fcmTokens'] as List?;
+    if (tokens != null && tokens.isNotEmpty) {
+      return List<String>.from(tokens);
+    }
+    // Legacy: single fcmToken field
+    final legacy = json['fcmToken'] as String?;
+    if (legacy != null && legacy.isNotEmpty) {
+      return [legacy];
+    }
+    return [];
   }
 
   static UserSettingsDto fromEntity(UserSettings entity) {
@@ -115,7 +130,7 @@ class UserSettingsDto {
       enableNotifications: entity.enableNotifications,
       notificationFrequency: entity.notificationFrequency,
       favoriteReachIds: entity.favoriteReachIds,
-      fcmToken: entity.fcmToken,
+      fcmTokens: entity.fcmTokens,
       customBackgroundImagePaths: entity.customBackgroundImagePaths,
       lastLoginDate: entity.lastLoginDate.toIso8601String(),
       createdAt: entity.createdAt.toIso8601String(),

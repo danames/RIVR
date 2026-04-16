@@ -129,6 +129,7 @@ class AuthGuard extends StatelessWidget {
                   CupertinoIcons.checkmark_circle,
                   size: 80,
                   color: CupertinoColors.systemGreen,
+                  semanticLabel: 'Already signed in',
                 ),
                 const SizedBox(height: 20),
                 const Text(

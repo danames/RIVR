@@ -209,6 +209,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             : CupertinoIcons.eye,
                         color: CupertinoColors.systemGrey,
                         size: 20,
+                        semanticLabel: _obscurePassword
+                            ? 'Show password'
+                            : 'Hide password',
                       ),
                     ),
                     onChanged: (_) {},
@@ -249,6 +252,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             : CupertinoIcons.eye,
                         color: CupertinoColors.systemGrey,
                         size: 20,
+                        semanticLabel: _obscureConfirmPassword
+                            ? 'Show password'
+                            : 'Hide password',
                       ),
                     ),
                     onChanged: (_) {},

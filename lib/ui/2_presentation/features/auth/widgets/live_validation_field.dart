@@ -183,6 +183,9 @@ class _LiveValidationFieldState extends State<LiveValidationField> {
                                   ? CupertinoColors.systemGreen
                                   : CupertinoColors.systemRed,
                               size: 20,
+                              semanticLabel: isValid
+                                  ? 'Valid input'
+                                  : 'Invalid input',
                             )
                           : null),
                 ),

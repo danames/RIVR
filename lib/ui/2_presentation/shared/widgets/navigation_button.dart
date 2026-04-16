@@ -42,6 +42,7 @@ class CustomNavBar extends StatelessWidget {
                 CupertinoIcons.back,
                 color: backButtonColor ?? CupertinoColors.systemBlue,
                 size: backButtonSize ?? 24,
+                semanticLabel: 'Go back',
               ),
             ),
 
@@ -106,6 +107,7 @@ class FloatingBackButton extends StatelessWidget {
               CupertinoIcons.back,
               color: iconColor ?? CupertinoColors.systemBlue,
               size: 20,
+              semanticLabel: 'Go back',
             ),
           ),
         ),

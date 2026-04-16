@@ -49,7 +49,7 @@ class DataSourceMessage extends StatelessWidget {
     final (icon, color) = _iconAndColor(state);
     return Row(
       children: [
-        Icon(icon, size: 14, color: color.resolveFrom(context)),
+        Icon(icon, size: 14, color: color.resolveFrom(context), semanticLabel: _title()),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -74,7 +74,7 @@ class DataSourceMessage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 48, color: color.resolveFrom(context)),
+            Icon(icon, size: 48, color: color.resolveFrom(context), semanticLabel: _title()),
             const SizedBox(height: 16),
             Text(
               _title(),

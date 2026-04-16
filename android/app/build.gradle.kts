@@ -111,6 +111,4 @@ dependencies {
     // Multidex support for large app with Firebase and other dependencies
     implementation("androidx.multidex:multidex:2.0.1")
     
-    // Kotlin standard library
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
 }

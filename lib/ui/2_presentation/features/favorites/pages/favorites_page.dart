@@ -182,7 +182,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         key: (_isTourActive || !_hasShownFavoritesTour) ? _settingsButtonKey : null,
         padding: EdgeInsets.zero,
         onPressed: _showSettingsMenu,
-        child: const Icon(CupertinoIcons.ellipsis),
+        child: const Icon(CupertinoIcons.ellipsis, semanticLabel: 'Settings menu'),
       ),
     );
   }
@@ -215,6 +215,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               context,
             ),
             size: 24,
+            semanticLabel: 'Add favorite river',
           ),
         ),
       ),
@@ -240,6 +241,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               CupertinoIcons.exclamationmark_triangle,
               size: 48,
               color: CupertinoColors.systemRed,
+              semanticLabel: 'Error',
             ),
             const SizedBox(height: 16),
             const Text(
@@ -297,6 +299,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         CupertinoIcons.heart,
                         size: 60,
                         color: CupertinoColors.systemBlue,
+                        semanticLabel: 'No favorites',
                       ),
                     ),
 
@@ -470,6 +473,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         ? CupertinoIcons.xmark_circle_fill
                         : CupertinoIcons.search,
                     color: CupertinoColors.systemBlue,
+                    semanticLabel: _showSearch ? 'Close search' : 'Search favorites',
                   ),
                 );
               }

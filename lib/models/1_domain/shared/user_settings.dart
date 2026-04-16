@@ -25,7 +25,7 @@ class UserSettings {
   final bool enableNotifications;
   final int notificationFrequency; // 1, 2, 3, or 4 times per day
   final List<String> favoriteReachIds;
-  final String? fcmToken;
+  final List<String> fcmTokens;
   final List<String>
   customBackgroundImagePaths; // List of custom uploaded image paths
   final DateTime lastLoginDate;
@@ -42,7 +42,7 @@ class UserSettings {
     required this.enableNotifications,
     this.notificationFrequency = 1, // Default to once daily
     required this.favoriteReachIds,
-    this.fcmToken,
+    this.fcmTokens = const [],
     this.customBackgroundImagePaths = const [], // Default to empty list
     required this.lastLoginDate,
     required this.createdAt,
@@ -58,7 +58,7 @@ class UserSettings {
     bool? enableNotifications,
     int? notificationFrequency,
     List<String>? favoriteReachIds,
-    String? fcmToken,
+    List<String>? fcmTokens,
     List<String>? customBackgroundImagePaths,
     DateTime? lastLoginDate,
   }) {
@@ -73,7 +73,7 @@ class UserSettings {
       notificationFrequency:
           notificationFrequency ?? this.notificationFrequency,
       favoriteReachIds: favoriteReachIds ?? this.favoriteReachIds,
-      fcmToken: fcmToken ?? this.fcmToken,
+      fcmTokens: fcmTokens ?? this.fcmTokens,
       customBackgroundImagePaths:
           customBackgroundImagePaths ?? this.customBackgroundImagePaths,
       lastLoginDate: lastLoginDate ?? this.lastLoginDate,
@@ -99,7 +99,7 @@ class UserSettings {
   String get fullName => '$firstName $lastName'.trim();
 
   // Helper method to check if user has valid FCM token
-  bool get hasValidFCMToken => fcmToken != null && fcmToken!.isNotEmpty;
+  bool get hasValidFCMToken => fcmTokens.isNotEmpty;
 
   // Custom background management
   bool get hasCustomBackgrounds => customBackgroundImagePaths.isNotEmpty;

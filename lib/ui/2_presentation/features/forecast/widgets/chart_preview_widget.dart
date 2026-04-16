@@ -214,7 +214,6 @@
 //   List<ChartDataPoint> _extractChartData(ReachDataProvider reachProvider) {
 //     final forecast = reachProvider.currentForecast;
 //     if (forecast == null) {
-//       print('CHART_PREVIEW: No forecast data available');
 //       return [];
 //     }
 
@@ -232,7 +231,6 @@
 //       // For other forecast types, use existing logic
 //       return _extractRegularForecastData(forecast);
 //     } catch (e) {
-//       print('CHART_PREVIEW: Error extracting data for $forecastType: $e');
 //       return [];
 //     }
 //   }
@@ -240,7 +238,6 @@
 //   List<ChartDataPoint> _extractShortRangeData(dynamic forecast) {
 //     final forecastSeries = forecast.getPrimaryForecast(forecastType);
 //     if (forecastSeries == null || forecastSeries.isEmpty) {
-//       print('CHART_PREVIEW: No short_range data available');
 //       return [];
 //     }
 
@@ -269,33 +266,22 @@
 //       // Sort by time to ensure proper order
 //       points.sort((a, b) => a.x.compareTo(b.x));
 
-//       print(
-//         'CHART_PREVIEW: Short-range using ${points.length} total hours including past data',
-//       );
 //       return points;
 //     } catch (e) {
-//       print('CHART_PREVIEW: Error extracting short-range data: $e');
 //       return [];
 //     }
 //   }
 
 //   // FIXED: New method for handling ensemble data (medium_range, long_range)
 //   List<ChartDataPoint> _extractEnsembleData(dynamic forecast) {
-//     print('CHART_PREVIEW: Extracting ensemble data for $forecastType');
-
 //     // Get the ensemble data map
 //     final Map<String, dynamic> ensembleData = forecastType == 'medium_range'
 //         ? forecast.mediumRange
 //         : forecast.longRange;
 
 //     if (ensembleData.isEmpty) {
-//       print('CHART_PREVIEW: No ensemble data available for $forecastType');
 //       return [];
 //     }
-
-//     print(
-//       'CHART_PREVIEW: Available ensemble series: ${ensembleData.keys.toList()}',
-//     );
 
 //     // FIXED: Try multiple data sources in order of preference
 //     final dataSources = [
@@ -309,10 +295,6 @@
 //         final forecastSeries = ensembleData[dataSource];
 
 //         if (forecastSeries != null && forecastSeries.isNotEmpty) {
-//           print(
-//             'CHART_PREVIEW: Using $dataSource for $forecastType (${forecastSeries.data.length} points)',
-//           );
-
 //           final points = <ChartDataPoint>[];
 //           final now = DateTime.now();
 
@@ -335,27 +317,16 @@
 //             }
 
 //             if (points.isNotEmpty) {
-//               print(
-//                 'CHART_PREVIEW: Successfully extracted ${points.length} points from $dataSource',
-//               );
 //               return points;
 //             }
 //           } catch (e) {
-//             print('CHART_PREVIEW: Error processing $dataSource data: $e');
 //             continue; // Try next data source
 //           }
 //         }
 //       }
 //     }
 
-//     print(
-//       'CHART_PREVIEW: No valid data found in any ensemble series for $forecastType',
-//     );
-
 //     // FALLBACK: Try the original getPrimaryForecast method as last resort
-//     print(
-//       'CHART_PREVIEW: Attempting fallback to getPrimaryForecast for $forecastType',
-//     );
 //     return _extractRegularForecastData(forecast);
 //   }
 
@@ -363,9 +334,6 @@
 //     // Existing logic for other forecast types (analysis_assimilation, medium_range_blend, etc.)
 //     final forecastSeries = forecast.getPrimaryForecast(forecastType);
 //     if (forecastSeries == null || forecastSeries.isEmpty) {
-//       print(
-//         'CHART_PREVIEW: No $forecastType data available from getPrimaryForecast',
-//       );
 //       return [];
 //     }
 
@@ -390,12 +358,8 @@
 //         }
 //       }
 
-//       print(
-//         'CHART_PREVIEW: Extracted ${points.length} points for $forecastType',
-//       );
 //       return points;
 //     } catch (e) {
-//       print('CHART_PREVIEW: Error extracting data for $forecastType: $e');
 //       return [];
 //     }
 //   }

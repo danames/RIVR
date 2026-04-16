@@ -126,6 +126,8 @@ class _ReachDetailsBottomSheetState extends State<ReachDetailsBottomSheet> {
                 widget.selectedReach.streamOrder,
               ),
               size: 24,
+              semanticLabel:
+                  'Stream order ${widget.selectedReach.streamOrder}',
             ),
           ),
           const SizedBox(width: 12),
@@ -200,6 +202,7 @@ class _ReachDetailsBottomSheetState extends State<ReachDetailsBottomSheet> {
                 CupertinoIcons.xmark_circle_fill,
                 color: CupertinoColors.systemGrey2.resolveFrom(context),
                 size: 24,
+                semanticLabel: 'Close',
               ),
             ),
         ],

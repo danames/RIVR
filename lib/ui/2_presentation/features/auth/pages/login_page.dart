@@ -141,6 +141,9 @@ class _LoginPageState extends State<LoginPage> {
                             : CupertinoIcons.eye,
                         color: CupertinoColors.systemGrey,
                         size: 20,
+                        semanticLabel: _obscurePassword
+                            ? 'Show password'
+                            : 'Hide password',
                       ),
                     ),
                     onChanged: (_) {},

@@ -55,6 +55,7 @@ class BaseLayerModal extends StatelessWidget {
                         ? const Icon(
                             CupertinoIcons.check_mark,
                             color: CupertinoColors.systemBlue,
+                            semanticLabel: 'Selected',
                           )
                         : null,
                     onTap: () {

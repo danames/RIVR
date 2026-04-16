@@ -266,6 +266,7 @@ class _StreamsListBottomSheetState extends State<StreamsListBottomSheet> {
               AppConstants.getStreamOrderIcon(stream.streamOrder),
               color: AppConstants.getStreamOrderColor(stream.streamOrder),
               size: 16,
+              semanticLabel: 'Stream order ${stream.streamOrder}',
             ),
           ),
           const SizedBox(width: 12),

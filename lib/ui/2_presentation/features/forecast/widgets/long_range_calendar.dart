@@ -160,6 +160,7 @@ class _LongRangeCalendarState extends State<LongRangeCalendar> {
                 ? CupertinoColors.systemBlue
                 : CupertinoColors.systemGrey3,
             size: 20,
+            semanticLabel: 'Previous month',
           ),
         ),
 
@@ -183,6 +184,7 @@ class _LongRangeCalendarState extends State<LongRangeCalendar> {
                 ? CupertinoColors.systemBlue
                 : CupertinoColors.systemGrey3,
             size: 20,
+            semanticLabel: 'Next month',
           ),
         ),
       ],
